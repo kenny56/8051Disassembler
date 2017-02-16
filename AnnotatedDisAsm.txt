@@ -3533,16 +3533,17 @@
 ; Jump Target - Callers: 1266           Duplicate of early start up routine that sets oscillator with same settings
 0x12AD 75 B2 C7   MOV  OSCICN, #0xC7    ; set OSC ICN to 1100 0111 = Enabled in normal mode, Sysclock is oscillator / 1
 0x12B0 22         RET 
-
-; Data in FLASH Space
-0x12B1            0x75 (u)
+                                        ; * kenny notes
+; Data in FLASH Space                   *Manually decode, they are called from code at 102A, which is also tagged data
+0x12B1 75 C9 40   MOV  rC9, #40         ;*
 0x12B2            0xC9
 0x12B3            0x40 (@)
-0x12B4            0x22 (")
-0x12B5            0xE4
-0x12B6            0xF5
+0x12B4 22         RET                   ;*
+
+0x12B5 E4         CLR A                 ; *
+0x12B6 F5 29      MOV X29, A            ; *
 0x12B7            0x29 ())
-0x12B8            0x22 (")
+0x12B8 22         RET                   ; *
 
 ; Jump Target - Callers: 0F29 0F6E 
 0x12B9 8F 27      MOV  X27h, R7
