@@ -68,37 +68,37 @@
 ; Jump Target - Callers: CPU on start up - This is the reset vector
 0x0000 02 04 1C   LJMP  0x041C
 
-; Data in FLASH Space
-0x0003            0x02
-0x0004            0x0C
-0x0005            0x03
+; Unused ISR for  INT0
+;0x0003            0x02
+;0x0004            0x0C
+;0x0005            0x03
 
 ; Jump Target - Callers: 07AC 
 0x0006 7F 01      MOV R7,  #0x01
 0x0008 02 00 46   LJMP  0x0046
 
-; Data in FLASH Space
-0x000B            0x02
-0x000C            0x0C
-0x000D            0x06
+; Unused ISR for  Timer0
+;0x000B            0x02
+;0x000C            0x0C
+;0x000D            0x06
 
 ; Jump Target - Callers: 07AF 
 0x000E 7F 06      MOV R7,  #0x06
 0x0010 02 00 46   LJMP  0x0046
 
-; Data in FLASH Space
-0x0013            0x02
-0x0014            0x0C
-0x0015            0x09
+; Unused ISR for INT1
+;0x0013            0x02
+;0x0014            0x0C
+;0x0015            0x09
 
 ; Jump Target - Callers: 083C 077E 05D4 05ED 01D8 023A 02E1 062A 0651 
 0x0016 7F 79      MOV R7,  #0x79
 0x0018 02 0A E9   LJMP  0x0AE9
 
-; Data in FLASH Space
-0x001B            0x02
-0x001C            0x0C
-0x001D            0x0C
+; Unused ISR for Timer1
+;0x001B            0x02
+;0x001C            0x0C
+;0x001D            0x0C
 
 ; Jump Target - Callers: 07F6 0258 02EF 07BB 0675 09BF 
 0x001E 7F 1F      MOV R7,  #0x1F
