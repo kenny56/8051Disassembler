@@ -128,7 +128,7 @@
 ;0x0034            0x0C
 ;0x0035            0x15
 
-; Jump Target - Callers: 0B18    - Routine that just disables global interrupts and returns
+; LJump Target - Callers: 0B18       ; end of first init starting routine, disable global interrupts and return
 0x0036 C2 AF      CLR  IE.7
 0x0038 22         RET 
 0x0039            0xFF
@@ -1929,7 +1929,7 @@
 0x0A75 12 00 4E   LCALL  0x004E
 0x0A78 22         RET 
 
-; Jump Target - Callers: 0B00   - UART Setup Routine / Timer Setup
+; LCALL Target - Callers: 0B00          ; Second init call [Timer Setup]
 0x0A79 D2 8E      SETB  TCON.6          ;enable timer 1 run control - used for UART
 0x0A7B 75 89 20   MOV  TMOD, #0x20      ;Timer Mode 0010 0000 = mode 2 - 8 bit auto reload
 0x0A7E 75 8D EC   MOV  TH1, #0xEC       ;Timer 1 high byte = 0xEC
@@ -2028,12 +2028,12 @@
 0x0B08 12 0A 3C   LCALL  0x0A3C     ; Fourth init call  [call into the main system loop, interrupts still off initially]
 0x0B0B 22         RET 
 
-; Jump Target - Callers: 0AFB       ; First set of init routines
+; Jump Target - Callers: 0AFB       ; First init call set of init routines
 0x0B0C 12 0B 45   LCALL  0x0B45     ; enable voltage monitor and set it as reset source
 0x0B0F 12 00 26   LCALL  0x0026     ; disable all PCA0 functions / make sure watchdog is off
 0x0B12 12 0A 95   LCALL  0x0A95     ; initialize ports P0 and P1
 0x0B15 12 00 2E   LCALL  0x002E     ; Set internal oscillator parameters
-0x0B18 02 00 36   LJMP  0x0036      ; Turn off interrupts globally - note this is a jump not a call but that's ok for last statement in a call
+0x0B18 02 00 36   LJMP  0x0036      ; Turn off interrupts globally, then return to starting init 0AFE
 
 ; Jump Target - Callers: 03E7 040C 
 0x0B1B AB 1B      MOV R3,  X1Bh
@@ -2084,7 +2084,7 @@
 ; Jump Target - Callers: 0B5A 
 0x0B5E 22         RET 
 
-; Data in FLASH Space
+; "BOOTload" data table used in init
 0x0B5F            0x05
 0x0B60            0x5D (])
 0x0B61            0x00
