@@ -65,7 +65,7 @@
 ;P0.4 - UART Tx
 ;P0.5 - UART Rx
 
-; Known ISR (using 15 available)
+; Known ISR (using __ of 15 available)
 
 ; Jump Target - Callers: CPU on start up - This is the reset vector
 0x0000 02 04 1C   LJMP  0x041C
@@ -846,7 +846,7 @@
 0x0419 7F 02      MOV R7,  #0x02
 0x041B 22         RET 
 
-; Jump Target - Callers: Reset Vector - Code starts here.
+; Jump Target - Callers: Reset Vector - Code starts here ; Clear the stack and set stack pointer
 0x041C 78 7F      MOV R0,  #0x7F    ;set R0 to 0x7F
 0x041E E4         CLR A             ;Clear accum
 
@@ -854,18 +854,18 @@
 0x041F F6         MOV @R0, A        ;Write 0 out to memory pointed to by R0
 0x0420 D8 FD      DJNZ R0,  0x041F  ;keep looping, clearing memory from 0x7F to 0
 0x0422 75 81 69   MOV  SP, #0x69    ;Set Stack pointer to 0x69
-0x0425 02 04 63   LJMP  0x0463      ;Call hardware init code
+0x0425 02 04 63   LJMP  0x0463      ;jump to the "BOOtload" section
 
-; Jump Target - Callers: 046A 
-0x0428 02 0A FB   LJMP  0x0AFB
+; Jump Target - Callers: 046A       ; exit branch from Bl section (Acc = 0) and jump to hardware init routines
+0x0428 02 0A FB   LJMP  0x0AFB      ; ljump to hardware init routines
 
-; Jump Target - Callers: 0481 
+; Jump Target - Callers: 0481       ; branch in Bl section to read data and eventually return
 0x042B E4         CLR A 
 0x042C 93         MOVC A, @A+DPTR 
 0x042D A3         INC DPTR 
 0x042E F8         MOV R0, A 
 
-; Jump Target - Callers: 0439 
+; Loop Target - Callers: 0439       ; internal loop to read data R7 times
 0x042F E4         CLR A 
 0x0430 93         MOVC A, @A+DPTR 
 0x0431 A3         INC DPTR 
@@ -879,9 +879,9 @@
 ; Jump Target - Callers: 0435 
 0x0438 08         INC R0 
 0x0439 DF F4      DJNZ R7,  0x042F
-0x043B 80 29      SJMP  0x0466
+0x043B 80 29      SJMP  0x0466          ; sjump back into Bl section
 
-; Jump Target - Callers: 0483 0457 
+; Jump Target - Callers: 0483 0457      ; branch on C and internal loop
 0x043D E4         CLR A 
 0x043E 93         MOVC A, @A+DPTR 
 0x043F A3         INC DPTR 
@@ -895,7 +895,7 @@
 0x0449 54 0F      ANL A,  #0x0F
 0x044B 44 20      ORL A,  #0x20
 0x044D C8         XCH A, R0 
-0x044E 83         MOVC A, @A+PC 
+0x044E 83         MOVC A, @A+PC     ; read from PC table at 045B (0C + dptr read value)
 0x044F 40 04      JC  0x0455
 0x0451 F4         CPL A 
 0x0452 56         ANL A, @R0 
@@ -907,26 +907,26 @@
 ; Jump Target - Callers: 0453 
 0x0456 F6         MOV @R0, A 
 0x0457 DF E4      DJNZ R7,  0x043D
-0x0459 80 0B      SJMP  0x0466
+0x0459 80 0B      SJMP  0x0466          ; sjump back into Bl section
 
-; Data in FLASH Space
+; Data table for PC-based read above in 044E
 0x045B            0x01
 0x045C            0x02
 0x045D            0x04
 0x045E            0x08
 0x045F            0x10
-0x0460            0x20 ( )
-0x0461            0x40 (@)
+0x0460            0x20 
+0x0461            0x40 
 0x0462            0x80
 
-; Jump Target - Callers: 0425 
-0x0463 90 0B 5F   MOV DPTR,  #0x0B5F    ;Set DPTR to B5F. Sure enough, thats the start of a data table.
-
+; Jump Target - Callers: 0425           ; "BOOTload" reader section
+0x0463 90 0B 5F   MOV DPTR,  #0x0B5F        ;Set DPTR to 0B5F "BOOTload" data table
+;                                           ; 05 5D 00 00 ... 
 ; Jump Target - Callers: 043B 0459 04A6 
 0x0466 E4         CLR A                 ;clear accum
 0x0467 7E 01      MOV R6,  #0x01        ;Set R6 to 1
 0x0469 93         MOVC A, @A+DPTR       ;Grab FLASH byte (going to be at 0+B5F at this point)
-0x046A 60 BC      JZ  0x0428            ;If it wasn't zero then branch to 0x428
+0x046A 60 BC      JZ  0x0428            ;EXIT Condition: If data was a zero then exit out branch to 0x428
 0x046C A3         INC DPTR              ;Increment DPTR
 0x046D FF         MOV R7, A             ;Store current accum to R7
 0x046E 54 3F      ANL A,  #0x3F         ;Accum = Accum & 3F (keep only lowest 6 bits)
@@ -934,7 +934,7 @@
 0x0473 54 1F      ANL A,  #0x1F         ;Now mask down to to 5 bits
 0x0475 FE         MOV R6, A             ;Save new Accum value to R6
 0x0476 E4         CLR A                 ;clear out accum
-0x0477 93         MOVC A, @A+DPTR       ;Grab byte at location DPTR (A is 0 after all)
+0x0477 93         MOVC A, @A+DPTR       ;Grab next byte at (incremented) DPTR (A is 0 after all)
 0x0478 A3         INC DPTR              ;Increment DPTR
 0x0479 60 01      JZ  0x047C            ;If grabbed value was 0 then branch to 0x47C
 0x047B 0E         INC R6 
@@ -954,7 +954,7 @@
 0x048B A3         INC DPTR              ;Increment DPTR
 0x048C F8         MOV R0, A             ;Save Accum to R0
 
-; Jump Target - Callers: 04A2 04A4 
+; Jump Target - Callers: 04A2 04A4      ; loop to read dptr values R7, R6 times
 0x048D E4         CLR A                 ;clear accum
 0x048E 93         MOVC A, @A+DPTR       ;grab value at DPTR (Flash)
 0x048F A3         INC DPTR              ;Increment DPTR
@@ -972,9 +972,9 @@
 0x049E CA         XCH A, R2             ;Swap Accum and R2
 0x049F C5 83      XCH A,  DPH           ;Swap Accum and high byte of DPTR
 0x04A1 CA         XCH A, R2             ;Swap Accum and R2
-0x04A2 DF E9      DJNZ R7,  0x048D      ;Deincrement R7 and branch if not zero to 0x48D
-0x04A4 DE E7      DJNZ R6,  0x048D      ;Deincrement R6 and branch if not zero to 0x48D
-0x04A6 80 BE      SJMP  0x0466          ;Branch back up to 0x466
+0x04A2 DF E9      DJNZ R7,  0x048D      ;Decrement R7 and loop if not zero 
+0x04A4 DE E7      DJNZ R6,  0x048D      ;Decrement R6 and loop if not zero
+0x04A6 80 BE      SJMP  0x0466          ;Branch back up into Bl section
 
 ; Jump Target - Callers: 0AB1 073B      ;seems to save registers to storage then init them to new values
 0x04A8 8C 0C      MOV  X0Ch, R4         ;Set RAM 0x0C to R4
