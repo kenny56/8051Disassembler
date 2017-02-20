@@ -847,13 +847,13 @@
 0x041B 22         RET 
 
 ; Jump Target - Callers: Reset Vector - Code starts here ; Clear the stack and set stack pointer
-0x041C 78 7F      MOV R0,  #0x7F    ;set R0 to 0x7F
+0x041C 78 7F      MOV R0,  #0x7F    ;set R0 to 0x7F  top of stack will be 7F
 0x041E E4         CLR A             ;Clear accum
 
-; Jump Target - Callers: 0420 
+; Jump Target - Callers: 0420       ; loop to clear stack then set pointer and jump to Bl section
 0x041F F6         MOV @R0, A        ;Write 0 out to memory pointed to by R0
 0x0420 D8 FD      DJNZ R0,  0x041F  ;keep looping, clearing memory from 0x7F to 0
-0x0422 75 81 69   MOV  SP, #0x69    ;Set Stack pointer to 0x69
+0x0422 75 81 69   MOV  SP, #0x69    ;Set Stack pointer to 0x69, this will be selector for main branch
 0x0425 02 04 63   LJMP  0x0463      ;jump to the "BOOtload" section
 
 ; Jump Target - Callers: 046A       ; exit branch from Bl section (Acc = 0) and jump to hardware init routines
@@ -2019,16 +2019,16 @@
 0x0AF8 8F 99      MOV  SBUF, R7
 0x0AFA 22         RET 
 
-; Jump Target - Callers: 0428       ; A set of hardware init routines. 
-0x0AFB 12 0B 0C   LCALL  0x0B0C     ; Early hardware set up  
-0x0AFE D2 93      SETB  P1.3        ; P1.3 is connected to an LED so this would likely turn it on.
-0x0B00 12 0A 79   LCALL  0x0A79     ; Setup timers (Timer 2 and Timer 1 for UART)
-0x0B03 12 0B A5   LCALL  0x0BA5     ; Set up UART
-0x0B06 C2 93      CLR  P1.3         ; Turn LED off
-0x0B08 12 0A 3C   LCALL  0x0A3C     ; Seems to be jumping into the main system loop - as far as I know interrupts are still off initially.
+; LJump Target - Callers: 0428      ; starting init routines 
+0x0AFB 12 0B 0C   LCALL  0x0B0C     ; First init call [VDDmon, PCA0, watchdog, P0, P1, Oscillator]
+0x0AFE D2 93      SETB  P1.3        ; P1.3 LED indicator for start init
+0x0B00 12 0A 79   LCALL  0x0A79     ; Second init call [Setup timers (Timer 2 and Timer 1 for UART)]
+0x0B03 12 0B A5   LCALL  0x0BA5     ; Third init call  [Set up UART]
+0x0B06 C2 93      CLR  P1.3         ; Turn LED off, init completed
+0x0B08 12 0A 3C   LCALL  0x0A3C     ; Fourth init call  [call into the main system loop, interrupts still off initially]
 0x0B0B 22         RET 
 
-; Jump Target - Callers: 0AFB       ; Another set of init routines
+; Jump Target - Callers: 0AFB       ; First set of init routines
 0x0B0C 12 0B 45   LCALL  0x0B45     ; enable voltage monitor and set it as reset source
 0x0B0F 12 00 26   LCALL  0x0026     ; disable all PCA0 functions / make sure watchdog is off
 0x0B12 12 0A 95   LCALL  0x0A95     ; initialize ports P0 and P1
