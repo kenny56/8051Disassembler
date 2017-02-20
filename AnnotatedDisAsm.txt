@@ -65,6 +65,8 @@
 ;P0.4 - UART Tx
 ;P0.5 - UART Rx
 
+; Known ISR (using 15 available)
+
 ; Jump Target - Callers: CPU on start up - This is the reset vector
 0x0000 02 04 1C   LJMP  0x041C
 
@@ -129,24 +131,24 @@
 ; Jump Target - Callers: 0B18    - Routine that just disables global interrupts and returns
 0x0036 C2 AF      CLR  IE.7
 0x0038 22         RET 
-
-; Data in FLASH Space
 0x0039            0xFF
 0x003A            0xFF
-0x003B            0x02
-0x003C            0x0C
-0x003D            0x18
+
+; Unused ADC0 ISR
+;0x003B            0x02
+;0x003C            0x0C
+;0x003D            0x18
 
 ; Jump Target - Callers: 0835 
 0x003E AF 5C      MOV R7,  X5Ch
 0x0040 22         RET 
-
-; Data in FLASH Space
 0x0041            0xFF
 0x0042            0xFF
-0x0043            0x02
-0x0044            0x0C
-0x0045            0x1B
+
+;Unused ADC0 EOC ISR
+;0x0043            0x02
+;0x0044            0x0C
+;0x0045            0x1B
 
 ; Jump Target - Callers: 0008 0010 0BB7 0ABA 0AC1 066E 
 0x0046 02 0A E9   LJMP  0x0AE9
