@@ -109,13 +109,13 @@
 
 ; Jump Target - Callers: 0B0F 
 0x0026 E4         CLR A 
-0x0027 F5 D9      MOV  PCAMD, A ;Keep watchdog off, system clock for PCA is Clock/12
+0x0027 F5 D9      MOV  PCAMD, A          ;Keep watchdog off, system clock for PCA is Clock/12
 0x0029 22         RET 
 
 ; Data in FLASH Space
 0x002A            0xFF
 
-; Jump Target - Callers: Timer 2 Overflow Interrupt
+; Jump Target - Callers:                ; Timer 2 Overflow Interrupt
 0x002B 02 0C 12   LJMP  0x0C12
 
 ; Jump Target - Callers: 0B15 
