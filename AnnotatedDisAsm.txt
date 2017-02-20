@@ -104,29 +104,27 @@
 0x001E 7F 1F      MOV R7,  #0x1F
 0x0020 02 0A E9   LJMP  0x0AE9
 
-; Jump Target - Callers: UART Interrupt
+; ISR for UART Interrupt
 0x0023 02 0C 0F   LJMP  0x0C0F 
 
 ; Jump Target - Callers: 0B0F 
 0x0026 E4         CLR A 
 0x0027 F5 D9      MOV  PCAMD, A          ;Keep watchdog off, system clock for PCA is Clock/12
 0x0029 22         RET 
+;0x002A            0xFF                 ; blank filler byte
 
-; Data in FLASH Space
-0x002A            0xFF
-
-; Jump Target - Callers:                ; Timer 2 Overflow Interrupt
+; ISR for  Timer 2 Overflow Interrupt
 0x002B 02 0C 12   LJMP  0x0C12
 
 ; Jump Target - Callers: 0B15 
 0x002E 75 B2 C7   MOV  OSCICN, #0xC7 ; set OSC ICN to 1100 0111 = Enabled in normal mode, Sysclock is oscillator / 1
 0x0031 22         RET 
-
-; Data in FLASH Space
 0x0032            0xFF
-0x0033            0x02
-0x0034            0x0C
-0x0035            0x15
+
+; Unused ISR for SPIO Interrupt
+;0x0033            0x02
+;0x0034            0x0C
+;0x0035            0x15
 
 ; Jump Target - Callers: 0B18    - Routine that just disables global interrupts and returns
 0x0036 C2 AF      CLR  IE.7
@@ -2242,7 +2240,7 @@
 ; Jump Target - Callers: 0023 
 0x0C0F 02 0D B9   LJMP  0x0DB9
 
-; Jump Target - Callers: 002B      - Target of Timer2 Overflow interrupt
+; LJump Target - ljmp from: 002B      - Target of Timer2 Overflow ISR interrupt
 0x0C12 02 11 0A   LJMP  0x110A
 
 ; Data in FLASH Space
