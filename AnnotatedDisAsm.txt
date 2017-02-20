@@ -175,7 +175,7 @@
 0x0056 8F 68      MOV  X68h, R7
 0x0058 22         RET 
 
-; Data in FLASH Space
+; Unused Interrupt Service Routines
 0x0059            0xFF
 0x005A            0xFF
 0x005B            0x02
@@ -846,7 +846,7 @@
 0x0419 7F 02      MOV R7,  #0x02
 0x041B 22         RET 
 
-; Jump Target - Callers: Reset Vector - Code starts here ; Clear the stack and set stack pointer
+; Jump Target - Callers: Reset Vector - Code starts here ; Clears the stack and sets stack pointer
 0x041C 78 7F      MOV R0,  #0x7F    ;set R0 to 0x7F  top of stack will be 7F
 0x041E E4         CLR A             ;Clear accum
 
@@ -1847,7 +1847,7 @@
 0x09F4 7F 01      MOV R7,  #0x01
 0x09F6 22         RET 
 
-; Jump Target - Callers: 096C 09D6 07CB 07E4 0382 01E9 027F 
+; Jump Target - Callers: 096C 09D6 07CB 07E4 0382 01E9 027F  ;
 0x09F7 8B 2D      MOV  X2Dh, R3
 0x09F9 8A 2E      MOV  X2Eh, R2
 0x09FB 89 2F      MOV  X2Fh, R1
@@ -1855,7 +1855,7 @@
 0x09FF 8E 32      MOV  X32h, R6
 0x0A01 8D 31      MOV  X31h, R5
 0x0A03 8C 30      MOV  X30h, R4
-0x0A05 12 0B C4   LCALL  0x0BC4
+0x0A05 12 0B C4   LCALL  0x0BC4             ;
 0x0A08 AB 2D      MOV R3,  X2Dh
 0x0A0A AA 2E      MOV R2,  X2Eh
 0x0A0C A9 2F      MOV R1,  X2Fh
@@ -1863,7 +1863,7 @@
 0x0A10 AE 32      MOV R6,  X32h
 0x0A12 AD 31      MOV R5,  X31h
 0x0A14 AC 30      MOV R4,  X30h
-0x0A16 12 06 D2   LCALL  0x06D2
+0x0A16 12 06 D2   LCALL  0x06D2             ; 
 0x0A19 22         RET 
 
 ; Jump Target - Callers:             First entry in main loop jump table
@@ -1887,22 +1887,22 @@
 0x0A38 12 00 4E   LCALL  0x004E
 0x0A3B 22         RET 
 
-; Jump Target - Callers: 0B08 
+; Jump Target - Callers: 0B08           ; Fourth init CALL routine
 0x0A3C E4         CLR A 
-0x0A3D F5 69      MOV  X69h, A      ;Write 0 to x69
+0x0A3D F5 69      MOV  X69h, A          ; load register x69 to #00
 
-; Jump Target - Callers: 0A59       ; Basically an infinite loop
-                                    ; This appears to be the main program loop
-0x0A3F E5 69      MOV A,  X69h      ;grab value from x69
+; Jump Target - Callers: 0A59       ; [MAIN] Basically an infinite loop
+;                                   ; This appears to be the main program loop
+0x0A3F E5 69      MOV A,  X69h      ;grab value from register x69, low byte of dptr [00-05]
 0x0A41 75 F0 03   MOV B, #0x03     
-0x0A44 A4         MUL AB            ;Multiply value from x69 by 3
+0x0A44 A4         MUL AB            ;Multiply value from x69 by 3, since data format is FF xx xx
 0x0A45 24 D7      ADD A,  #0xD7     ;Add 0xD7 to result
 0x0A47 F5 82      MOV DPL, A        ;put that in low byte of DPTR
 0x0A49 E4         CLR A 
 0x0A4A 34 0A      ADDC A,  #0x0A    
 0x0A4C F5 83      MOV DPH, A        ;Set high byte of DPTR to A
 0x0A4E 74 01      MOV A,  #0x01
-0x0A50 93         MOVC A, @A+DPTR   ;Look up 1 + DPTR
+0x0A50 93         MOVC A, @A+DPTR   ;Look up 1 + DPTR DPTR is at #0AD7 + offset for selector
 0x0A51 FA         MOV R2, A         ;Drop that in R2
 0x0A52 74 02      MOV A,  #0x02     
 0x0A54 93         MOVC A, @A+DPTR   ;Look up 2 + DPTR
@@ -1910,7 +1910,7 @@
 0x0A56 12 01 90   LCALL  0x0190     ;Do a call that grabs R1 and R2 and does the jump to that address.
 0x0A59 80 E4      SJMP  0x0A3F      ;Jump back to top of this routine
 
-; Jump Target - Callers:            Second jump target in main loop jump table
+; Jump Target - Callers:            ; Second jump target in main loop jump table
 0x0A5B 7F 01      MOV R7,  #0x01
 0x0A5D 12 00 4E   LCALL  0x004E
 0x0A60 12 09 CF   LCALL  0x09CF
@@ -1929,7 +1929,7 @@
 0x0A75 12 00 4E   LCALL  0x004E
 0x0A78 22         RET 
 
-; LCALL Target - Callers: 0B00          ; Second init call [Timer Setup]
+; LCALL Target - Callers: 0B00          ; Second init LCALL [Timer Setup]
 0x0A79 D2 8E      SETB  TCON.6          ;enable timer 1 run control - used for UART
 0x0A7B 75 89 20   MOV  TMOD, #0x20      ;Timer Mode 0010 0000 = mode 2 - 8 bit auto reload
 0x0A7E 75 8D EC   MOV  TH1, #0xEC       ;Timer 1 high byte = 0xEC
@@ -1939,8 +1939,8 @@
 0x0A88 75 CA 6F   MOV  TMR2RLL, #0x6F   ;set up timer count registers.
 0x0A8B 75 CB FE   MOV  TMR2RLH, #0xFE   ; FE6F = 65135 
 0x0A8E 75 CC 6F   MOV  TMP2L, #0x6F     ; If timer runs 24.5MHz that's about 2.65ms timeout... why?
-0x0A91 75 CD FE   MOV  TMR2H, #0xFE
-0x0A94 22         RET 
+0x0A91 75 CD FE   MOV  TMR2H, #0xFE     ;
+0x0A94 22         RET                   ; exit back to 0B03
 
 ; Jump Target - Callers: 0B12 - init routine called from reset vector - initializes ports
 ; According to our schematic, P1.3 is connected to the LED, P0.0 is SCLK, P0.1 is MISO, P0.2 is MOSI, P0.3 is CS
@@ -1983,14 +1983,14 @@
 0x0AD4 7F 00      MOV R7,  #0x00
 0x0AD6 22         RET 
 
-; Data in FLASH Space - These are jump targets. The pattern is FF then two bytes that form a 16 bit
-; jump target.
-0x0AD7            0xFF
+; Main Jump Data Table      ; main jump targets. 
+;                           ; Selector is carried in register 69, 00 01 02 03 04 05, from data table@
+0x0AD7            0xFF      ; The pattern is FF then two bytes that form a 16 bit jump target address.
 0x0AD8            0x0A      ;First target 0x0A1A
 0x0AD9            0x1A
 0x0ADA            0xFF
 0x0ADB            0x0A      ;Second target 0x0A5B
-0x0ADC            0x5B ([)
+0x0ADC            0x5B 
 0x0ADD            0xFF
 0x0ADE            0x08      ;Third target 0x080A
 0x0ADF            0x0A
@@ -1999,7 +1999,7 @@
 0x0AE2            0xA7
 0x0AE3            0xFF
 0x0AE4            0x0B      ;Fifth target 0x0B38
-0x0AE5            0x38 (8)
+0x0AE5            0x38
 0x0AE6            0xFF
 0x0AE7            0x0B      ;Sixth target 0x0BCE
 0x0AE8            0xCE
@@ -2019,7 +2019,7 @@
 0x0AF8 8F 99      MOV  SBUF, R7
 0x0AFA 22         RET 
 
-; LJump Target - Callers: 0428      ; starting init routines 
+; LJump Target - Callers: 0428      ; starting init routines after Bl exit
 0x0AFB 12 0B 0C   LCALL  0x0B0C     ; First init call [VDDmon, PCA0, watchdog, P0, P1, Oscillator]
 0x0AFE D2 93      SETB  P1.3        ; P1.3 LED indicator for start init
 0x0B00 12 0A 79   LCALL  0x0A79     ; Second init call [Setup timers (Timer 2 and Timer 1 for UART)]
@@ -2028,12 +2028,12 @@
 0x0B08 12 0A 3C   LCALL  0x0A3C     ; Fourth init call  [call into the main system loop, interrupts still off initially]
 0x0B0B 22         RET 
 
-; Jump Target - Callers: 0AFB       ; First init call set of init routines
-0x0B0C 12 0B 45   LCALL  0x0B45     ; enable voltage monitor and set it as reset source
-0x0B0F 12 00 26   LCALL  0x0026     ; disable all PCA0 functions / make sure watchdog is off
-0x0B12 12 0A 95   LCALL  0x0A95     ; initialize ports P0 and P1
-0x0B15 12 00 2E   LCALL  0x002E     ; Set internal oscillator parameters
-0x0B18 02 00 36   LJMP  0x0036      ; Turn off interrupts globally, then return to starting init 0AFE
+; Jump Target - Callers: 0AFB       ; First init call routine set of lcalls
+0x0B0C 12 0B 45   LCALL  0x0B45     ; 1.  enable voltage monitor and set it as reset source
+0x0B0F 12 00 26   LCALL  0x0026     ; 2.  disable all PCA0 functions / make sure watchdog is off
+0x0B12 12 0A 95   LCALL  0x0A95     ; 3.  initialize ports P0 and P1
+0x0B15 12 00 2E   LCALL  0x002E     ; 4.  Set internal oscillator parameters
+0x0B18 02 00 36   LJMP  0x0036      ; 5.  Turn off interrupts globally, then return to starting init 0AFE
 
 ; Jump Target - Callers: 03E7 040C 
 0x0B1B AB 1B      MOV R3,  X1Bh
@@ -2052,7 +2052,7 @@
 0x0B35 F5 24      MOV  X24h, A
 0x0B37 22         RET 
 
-; Jump Target - Callers:                Fifth jump target in main loop jump table
+; Jump Target - Callers:                   ; Fifth jump target in main loop jump table
 0x0B38 C2 93      CLR  P1.3
 0x0B3A 7F B6      MOV R7,  #0xB6
 0x0B3C 7E B2      MOV R6,  #0xB2
@@ -2060,12 +2060,12 @@
 0x0B41 75 69 02   MOV  X69h, #0x02
 0x0B44 22         RET 
 
-; Jump Target - Callers: 0B0C 
+; Jump Target - Callers: 0B0C               ; first lcall of first init call set 
 0x0B45 75 FF 80   MOV  VDDMON, #0x80        ;enable VDDMon
 0x0B48 E4         CLR A 
 0x0B49 FF         MOV R7, A 
 
-; Jump Target - Callers: 0B4B 
+; Jump Target - Callers: 0B4B               ; wait loop
 0x0B4A 0F         INC R7 
 0x0B4B BF 14 FC   CJNE R7,  #0x14, 0x0B4A   ; Wait a bit of time after enabling VDDMON
 0x0B4E 75 EF 02   MOV  RSTSRC, #0x02        ; Set VDDMON as reset source
@@ -2084,7 +2084,7 @@
 ; Jump Target - Callers: 0B5A 
 0x0B5E 22         RET 
 
-; "BOOTload" data table used in init
+; "BOOTload" data table used in start routine
 0x0B5F            0x05
 0x0B60            0x5D (])
 0x0B61            0x00
@@ -2147,15 +2147,15 @@
 0x0BA2 02 01 30   LJMP  0x0130              ; Do a lot a subtracting and OR'ing and return in A
                                             ; 0x130 has a ret in it so it returns for this routine and execution is done here.
 
-; Jump Target - Callers: 0B03   ;UART Set up
-0x0BA5 C2 9F      CLR  SCON.7   ;Set 8 bit serial mode
-0x0BA7 D2 9D      SETB  SCON.5  ;Only activate if stop bit is 1
-0x0BA9 D2 9C      SETB  SCON.4  ;Enable serial reception
-0x0BAB C2 99      CLR  SCON.1   ;Clear transmit interrupt flag
-0x0BAD C2 98      CLR  SCON.0   ;Clear receieve interrupt flag
-0x0BAF 22         RET 
+; Jump Target - Callers: 0B03       ; Third init Call routine - UART Set up
+0x0BA5 C2 9F      CLR  SCON.7       ;Set 8 bit serial mode
+0x0BA7 D2 9D      SETB  SCON.5      ;Only activate if stop bit is 1
+0x0BA9 D2 9C      SETB  SCON.4      ;Enable serial reception
+0x0BAB C2 99      CLR  SCON.1       ;Clear transmit interrupt flag
+0x0BAD C2 98      CLR  SCON.0       ;Clear receieve interrupt flag
+0x0BAF 22         RET               ; exit back to 0B06
 
-; Jump Target - Callers: 07B2 
+; Jump Target - Callers: 07B2               ; loading loop counters ?
 0x0BB0 7F 00      MOV R7,  #0x00
 0x0BB2 7E 1A      MOV R6,  #0x1A
 0x0BB4 12 0B 78   LCALL  0x0B78
@@ -2196,13 +2196,13 @@
 0x0BE2 F5 8F      MOV  PSCTL, A
 0x0BE4 22         RET 
 
-; Data in FLASH Space
-0x0BE5            0x00
+; Data Table pointed from:  0399  088E 
+0x0BE5            0x00          ; first state code
 0x0BE6            0x01
 0x0BE7            0x02
 0x0BE8            0x03
 0x0BE9            0x04
-0x0BEA            0x05
+0x0BEA            0x05          ; sixth code
 0x0BEB            0xFF
 0x0BEC            0xFF
 0x0BED            0xFF
