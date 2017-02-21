@@ -58,7 +58,7 @@
 ;
 ; DPTR data tables:
 ;
-; 1245
+; 
 ; 0C15  - large table of periodic ascending values, length x100 [256 values]
 ; 0D15  - secondary jump table addresses [set of 8 addresses]
 ; 0458  - 8 data bytes 01 02 04 08 10 20 40 80 read using the PC [8 values]
@@ -68,7 +68,8 @@
 ; 0B74  - 4 data bytes [81 8A 85 88]
 ; 0B6C  - "BOOTload"
 ;
-; 
+; 1245  - 20 data bytes in table
+;
 ; 12C2 to 1CFF is blank [FF] except for data bytes at boundary:
 ; 1A00 = [0x03] beginning of 14th page
 ; 1BFE - 1BFF = [x92 x18] last 2 bytes of 14th page (1p = 512 bytes, 0x200), security bytes?
@@ -1404,8 +1405,8 @@
 ; Jump Target - Callers: 077B 
 0x0726 7F 00      MOV R7,  #0x00
 0x0728 7E 1A      MOV R6,  #0x1A
-0x072A 12 0B 78   LCALL  0x0B78   ;Look up value at 0x1A00 in FLASH (it's 3)
-0x072D EF         MOV A, R7       ;Transfer that value to Accum
+0x072A 12 0B 78   LCALL  0x0B78   ; Look up value at 0x1A00 in FLASH (it's 3)
+0x072D EF         MOV A, R7       ; Transfer that value to Accum
 0x072E F4         CPL A           ; NOT 3 = 1111 1100 = 0xFC
 0x072F 60 42      JZ  0x0773      ; yet again a branch that cannot happen. 0x1A00 is always 3 (isn't it?!)
 0x0731 E4         CLR A           ; zero out accum
@@ -1420,7 +1421,7 @@
 0x0740 8F 0B      MOV  X0Bh, R7
 0x0742 7F FE      MOV R7,  #0xFE
 0x0744 7E 1B      MOV R6,  #0x1B
-0x0746 12 0B 78   LCALL  0x0B78
+0x0746 12 0B 78   LCALL  0x0B78     ; 1BFE = bytes located at top of 14th page
 0x0749 EF         MOV A, R7 
 0x074A 7F 00      MOV R7,  #0x00
 0x074C FE         MOV R6, A 
@@ -1428,7 +1429,7 @@
 0x074F C0 07      PUSH  R7
 0x0751 7F FF      MOV R7,  #0xFF
 0x0753 7E 1B      MOV R6,  #0x1B
-0x0755 12 0B 78   LCALL  0x0B78
+0x0755 12 0B 78   LCALL  0x0B78     ; 1BFF = last byte of 14th page
 0x0758 EF         MOV A, R7 
 0x0759 FD         MOV R5, A 
 0x075A D0 E0      POP  ACC
@@ -1453,7 +1454,7 @@
 0x0778 B4 21 03   CJNE A,  #0x21, 0x077E
 0x077B 02 07 26   LJMP  0x0726
 
-; Jump Target - Callers: 0778 
+; Jump Target - Callers: 0778           ; compare value in register 09 to select jump branch
 0x077E 12 00 16   LCALL  0x0016
 0x0781 E5 09      MOV A,  X09h
 0x0783 24 E6      ADD A,  #0xE6
@@ -1474,7 +1475,7 @@
 0x07A1 70 18      JNZ  0x07BB
 0x07A3 02 06 1E   LJMP  0x061E
 
-; Jump Target - Callers: 0795 
+; Jump Target - Callers: 0795           ;branches
 0x07A6 02 02 5C   LJMP  0x025C
 
 ; Jump Target - Callers: 078D 
@@ -2113,7 +2114,7 @@
 0x0B5E 22         RET 
 
 ; "BOOTload" data table used in start routine
-0x0B5F            0x05
+0x0B5F            0x05              ;  from x0463
 0x0B60            0x5D (])
 0x0B61            0x00
 0x0B62            0x00
@@ -2126,7 +2127,8 @@
 0x0B69            0x00
 0x0B6A            0x01
 0x0B6B            0x00
-0x0B6C            0x42 (B)
+;
+0x0B6C            0x42 (B)          ; from 0B6C
 0x0B6D            0x4F (O)
 0x0B6E            0x4F (O)
 0x0B6F            0x54 (T)
@@ -2134,7 +2136,8 @@
 0x0B71            0x6F (o)
 0x0B72            0x61 (a)
 0x0B73            0x64 (d)
-0x0B74            0x81
+;
+0x0B74            0x81              ; from 055E
 0x0B75            0x8A
 0x0B76            0x85
 0x0B77            0x88
@@ -2276,7 +2279,7 @@
 ; LJump Target - ljmp from: 002B      - Target of Timer2 Overflow ISR interrupt
 0x0C12 02 11 0A   LJMP  0x110A
 
-; Data in FLASH Space
+; Data in FLASH Space                   ; from 101A
 0x0C15            0x00
 0x0C16            0x07
 0x0C17            0x0E
@@ -3480,7 +3483,7 @@
 ; Jump Target - Callers: 1240 
 0x1244 22         RET 
 
-; Data in FLASH Space
+; Data in FLASH Space                   ; from 0D74
 0x1245            0x06
 0x1246            0x23 (#)
 0x1247            0x00
@@ -5448,7 +5451,7 @@
 0x19FD            0xFF
 0x19FE            0xFF
 0x19FF            0xFF
-0x1A00            0x03
+0x1A00            0x03          ; data byte for read call from 072A
 0x1A01            0xFF
 0x1A02            0xFF
 0x1A03            0xFF
