@@ -1,3 +1,5 @@
+; dasm notes working copy for kenny
+;
 ; 8051 Disassembler for SiLabs C8051F530 processors.
 
 ; Key to reading the assembly:
