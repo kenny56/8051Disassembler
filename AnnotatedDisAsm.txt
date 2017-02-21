@@ -37,10 +37,10 @@
 ;
 ;There are two jump tables (that I know of) in Flash:
 ;
-;Main loop jump table - Reached via system start up. Runs as an infinite loop each time jumping to one of the below:
+;Main loop jump table: [6 jump addresses] Reached via system start up. 
 ;    0xA1A, 0xA5B, 0x80A, 0x9A7, 0xB38, 0xBCE
 ;
-;Second jump table: 
+;Second jump table: [8 jump addresses]
 ;    0xF27, 0x10A2, 0x1154, 0x10B8, 0x1175, 0x11EB, 0x1279, 0x105E
 ;
 ;Known uses for RAM locations:
@@ -68,7 +68,7 @@
 ; Known ISR (using __ of 15 available)
 
 ; Jump Target - Callers: CPU on start up - This is the reset vector
-0x0000 02 04 1C   LJMP  0x041C
+0x0000 02 04 1C   LJMP  0x041C          ; jump to start up routine
 
 ; Unused ISR for  INT0
 ;0x0003            0x02
@@ -94,8 +94,8 @@
 ;0x0015            0x09
 
 ; Jump Target - Callers: 083C 077E 05D4 05ED 01D8 023A 02E1 062A 0651 
-0x0016 7F 79      MOV R7,  #0x79
-0x0018 02 0A E9   LJMP  0x0AE9
+0x0016 7F 79      MOV R7,  #0x79    
+0x0018 02 0A E9   LJMP  0x0AE9      ; load R7 and go to [  ]
 
 ; Unused ISR for Timer1
 ;0x001B            0x02
@@ -104,7 +104,7 @@
 
 ; Jump Target - Callers: 07F6 0258 02EF 07BB 0675 09BF 
 0x001E 7F 1F      MOV R7,  #0x1F
-0x0020 02 0A E9   LJMP  0x0AE9
+0x0020 02 0A E9   LJMP  0x0AE9      ; load R7 and go to [   ]
 
 ; ISR for UART Interrupt
 0x0023 02 0C 0F   LJMP  0x0C0F 
@@ -506,7 +506,7 @@
 0x01D2 12 06 79   LCALL  0x0679
 0x01D5 EF         MOV A, R7 
 0x01D6 60 7B      JZ  0x0253
-0x01D8 12 00 16   LCALL  0x0016
+0x01D8 12 00 16   LCALL  0x0016             ; [    ] routine
 0x01DB 7B 00      MOV R3,  #0x00
 0x01DD 7A 00      MOV R2,  #0x00
 0x01DF 79 0C      MOV R1,  #0x0C
@@ -788,7 +788,8 @@
 ; Jump Target - Callers: 03A4 
 0x03BD 7F 03      MOV R7,  #0x03
 0x03BF 22         RET 
-
+;
+;
 ; Jump Target - Callers: 03BA 
 0x03C0 05 1F      INC  X1Fh
 0x03C2 E5 1F      MOV A,  X1Fh
@@ -846,7 +847,7 @@
 0x0419 7F 02      MOV R7,  #0x02
 0x041B 22         RET 
 
-; Jump Target - Callers: Reset Vector - Code starts here ; Clears the stack and sets stack pointer
+; Jump Target - Caller: Reset Vector; Code starts here [Clears the stack and sets stack pointer]
 0x041C 78 7F      MOV R0,  #0x7F    ;set R0 to 0x7F  top of stack will be 7F
 0x041E E4         CLR A             ;Clear accum
 
@@ -855,11 +856,12 @@
 0x0420 D8 FD      DJNZ R0,  0x041F  ;keep looping, clearing memory from 0x7F to 0
 0x0422 75 81 69   MOV  SP, #0x69    ;Set Stack pointer to 0x69, this will be selector for main branch
 0x0425 02 04 63   LJMP  0x0463      ;jump to the "BOOtload" section
-
-; Jump Target - Callers: 046A       ; exit branch from Bl section (Acc = 0) and jump to hardware init routines
-0x0428 02 0A FB   LJMP  0x0AFB      ; ljump to hardware init routines
-
-; Jump Target - Callers: 0481       ; branch in Bl section to read data and eventually return
+;
+; Jump Target - Callers: 046A       ; jump back from the Bl section (Acc = 0) and jump to hardware init routines
+0x0428 02 0A FB   LJMP  0x0AFB      ; jump to the hardware init routines
+;
+;
+; Jump Target - Callers: 0481       ; branch in Bl section to loop read data
 0x042B E4         CLR A 
 0x042C 93         MOVC A, @A+DPTR 
 0x042D A3         INC DPTR 
@@ -895,7 +897,7 @@
 0x0449 54 0F      ANL A,  #0x0F
 0x044B 44 20      ORL A,  #0x20
 0x044D C8         XCH A, R0 
-0x044E 83         MOVC A, @A+PC     ; read from PC table at 045B (0C + dptr read value)
+0x044E 83         MOVC A, @A+PC         ; read from PC table at 045B (0C + dptr read value)
 0x044F 40 04      JC  0x0455
 0x0451 F4         CPL A 
 0x0452 56         ANL A, @R0 
@@ -1520,7 +1522,7 @@
 0x0807 7F 01      MOV R7,  #0x01
 0x0809 22         RET 
 
-; Jump Target - Callers:                Third jump target in main loop jump table
+; Jump Target - Callers:                ; Third jump target in main loop jump table
 0x080A 7F 01      MOV R7,  #0x01
 0x080C 12 00 4E   LCALL  0x004E
 0x080F 7A 00      MOV R2,  #0x00
@@ -1534,37 +1536,38 @@
 0x081D EF         MOV A, R7 
 0x081E 64 01      XRL A,  #0x01
 0x0820 60 04      JZ  0x0826
-0x0822 75 69 05   MOV  X69h, #0x05
+0x0822 75 69 05   MOV  X69h, #0x05      ; set selector to 05
 0x0825 22         RET 
 
-; Jump Target - Callers: 0820 
-0x0826 D2 93      SETB  P1.3
+; Jump Target - Callers: 0820           ;branch in main third [acc = R7 = 0]
+0x0826 D2 93      SETB  P1.3            ; turn on LED
 0x0828 E5 08      MOV A,  X08h
 0x082A D3         SETB C 
 0x082B 94 10      SUBB A,  #0x10
 0x082D 40 06      JC  0x0835
-0x082F 75 69 05   MOV  X69h, #0x05
-0x0832 C2 93      CLR  P1.3
+0x082F 75 69 05   MOV  X69h, #0x05      ; set selector to 05
+0x0832 C2 93      CLR  P1.3             ; turn off LED
 0x0834 22         RET 
 
-; Jump Target - Callers: 082D 
+; Jump Target - Callers: 082D           ; branch in main third C=1
 0x0835 12 00 3E   LCALL  0x003E
 0x0838 EF         MOV A, R7 
 0x0839 B5 08 08   CJNE A,  X08h, 0x0844
-0x083C 12 00 16   LCALL  0x0016
-0x083F 75 69 03   MOV  X69h, #0x03
+0x083C 12 00 16   LCALL  0x0016         ; loads R7 = #79 and goes to [   ]
+0x083F 75 69 03   MOV  X69h, #0x03      ; set selector to 03
 0x0842 80 03      SJMP  0x0847
 
 ; Jump Target - Callers: 0839 
-0x0844 75 69 04   MOV  X69h, #0x04
+0x0844 75 69 04   MOV  X69h, #0x04      ; set selector to 04
 
 ; Jump Target - Callers: 0842 
 0x0847 E4         CLR A 
 0x0848 FF         MOV R7, A 
 0x0849 12 00 4E   LCALL  0x004E
 0x084C 22         RET 
-
-; Jump Target - Callers: 098A 
+;
+;
+; Jump Target - Callers: 098A           ; Flash Lock and Key, and program store control
 0x084D 75 FF A0   MOV  VDDMON, #0xA0
 0x0850 E5 B7      MOV A,  FLKEY
 0x0852 64 02      XRL A,  #0x02
@@ -1604,8 +1607,9 @@
 
 ; Jump Target - Callers: 0881 0877 
 0x0888 7F 01      MOV R7,  #0x01
-0x088A 22         RET 
-
+0x088A 22         RET                           ; exit routine
+;
+;
 ; Jump Target - Callers: 02CE 
 0x088B E4         CLR A 
 0x088C FF         MOV R7, A 
@@ -1809,18 +1813,18 @@
 0x09B2 7D BA      MOV R5,  #0xBA
 0x09B4 FC         MOV R4, A 
 0x09B5 12 07 BF   LCALL  0x07BF
-0x09B8 C2 93      CLR  P1.3
+0x09B8 C2 93      CLR  P1.3             ; turn off LED
 0x09BA EF         MOV A, R7 
 0x09BB 64 01      XRL A,  #0x01
 0x09BD 60 07      JZ  0x09C6
 0x09BF 12 00 1E   LCALL  0x001E
-0x09C2 75 69 04   MOV  X69h, #0x04
+0x09C2 75 69 04   MOV  X69h, #0x04      ; set selector to 04
 0x09C5 22         RET 
 
 ; Jump Target - Callers: 09BD 
 0x09C6 AF 08      MOV R7,  X08h
 0x09C8 12 07 74   LCALL  0x0774
-0x09CB 75 69 02   MOV  X69h, #0x02
+0x09CB 75 69 02   MOV  X69h, #0x02      ; set selector to 02
 0x09CE 22         RET 
 
 ; Jump Target - Callers: 0A60 
@@ -1868,7 +1872,7 @@
 
 ; Jump Target - Callers:             First entry in main loop jump table
 0x0A1A 7F 01      MOV R7,  #0x01    ;R7 = 1
-0x0A1C 12 00 4E   LCALL  0x004E     ;call does nothing but set RAM 0x61 to R7 (so 1 in this case)
+0x0A1C 12 00 4E   LCALL  0x004E     ; call does nothing but set RAM 0x61 to R7 (so 1 in this case)
 0x0A1F C2 93      CLR  P1.3         ; Turn off LED
 0x0A21 D2 93      SETB  P1.3        ; Turn it on... Yeah, that was fun
 0x0A23 12 05 32   LCALL  0x0532     ; Initializes some RAM locations (x9, xA, xB, x69)
@@ -1880,20 +1884,20 @@
 0x0A30 22         RET 
 
 ; Jump Target - Callers: 0A29 
-0x0A31 C2 93      CLR  P1.3
-0x0A33 75 69 01   MOV  X69h, #0x01
+0x0A31 C2 93      CLR  P1.3             ; turn off LED
+0x0A33 75 69 01   MOV  X69h, #0x01      ; set selector to 01
 0x0A36 E4         CLR A 
 0x0A37 FF         MOV R7, A 
 0x0A38 12 00 4E   LCALL  0x004E
 0x0A3B 22         RET 
 
-; Jump Target - Callers: 0B08           ; Fourth init CALL routine
+; Jump Target - Callers: 0B08           ; Fourth/final init CALL routine => start of [MAIN]
 0x0A3C E4         CLR A 
-0x0A3D F5 69      MOV  X69h, A          ; load register x69 to #00
+0x0A3D F5 69      MOV  X69h, A          ; set selector register x69 to #00
 
 ; Jump Target - Callers: 0A59       ; [MAIN] Basically an infinite loop
 ;                                   ; This appears to be the main program loop
-0x0A3F E5 69      MOV A,  X69h      ;grab value from register x69, low byte of dptr [00-05]
+0x0A3F E5 69      MOV A,  X69h      ; grab value from selector register x69, low byte of dptr [00-05]
 0x0A41 75 F0 03   MOV B, #0x03     
 0x0A44 A4         MUL AB            ;Multiply value from x69 by 3, since data format is FF xx xx
 0x0A45 24 D7      ADD A,  #0xD7     ;Add 0xD7 to result
@@ -1902,7 +1906,7 @@
 0x0A4A 34 0A      ADDC A,  #0x0A    
 0x0A4C F5 83      MOV DPH, A        ;Set high byte of DPTR to A
 0x0A4E 74 01      MOV A,  #0x01
-0x0A50 93         MOVC A, @A+DPTR   ;Look up 1 + DPTR DPTR is at #0AD7 + offset for selector
+0x0A50 93         MOVC A, @A+DPTR   ;Look up 1 + DPTR DPTR is at #0AD7 + offset for selector = main jump data table
 0x0A51 FA         MOV R2, A         ;Drop that in R2
 0x0A52 74 02      MOV A,  #0x02     
 0x0A54 93         MOVC A, @A+DPTR   ;Look up 2 + DPTR
@@ -1917,13 +1921,13 @@
 0x0A63 EF         MOV A, R7 
 0x0A64 64 01      XRL A,  #0x01
 0x0A66 60 06      JZ  0x0A6E
-0x0A68 C2 93      CLR  P1.3
-0x0A6A 75 69 05   MOV  X69h, #0x05
+0x0A68 C2 93      CLR  P1.3             ; turn off LED
+0x0A6A 75 69 05   MOV  X69h, #0x05      ; set selector to 05
 0x0A6D 22         RET 
 
 ; Jump Target - Callers: 0A66 
-0x0A6E 75 69 02   MOV  X69h, #0x02
-0x0A71 C2 93      CLR  P1.3
+0x0A6E 75 69 02   MOV  X69h, #0x02      ; set selector to 02
+0x0A71 C2 93      CLR  P1.3             ; turn off LED
 0x0A73 E4         CLR A 
 0x0A74 FF         MOV R7, A 
 0x0A75 12 00 4E   LCALL  0x004E
@@ -2195,7 +2199,8 @@
 0x0BE1 E4         CLR A 
 0x0BE2 F5 8F      MOV  PSCTL, A
 0x0BE4 22         RET 
-
+;
+;
 ; Data Table pointed from:  0399  088E 
 0x0BE5            0x00          ; first state code
 0x0BE6            0x01
@@ -2224,7 +2229,9 @@
 0x0BFD            0xFF
 0x0BFE            0xFF
 0x0BFF            0xFF
-
+;
+;
+;
 ; Jump Target - Callers: 0770 
 0x0C00 02 0D 2D   LJMP  0x0D2D
 
@@ -2234,11 +2241,11 @@
 0x0C06 75 EB FF   MOV  PCACPL2, #0xFF   ; Set low byte of capture module 2 to 0xFF
 0x0C09 75 D9 60   MOV  PCAMD, #0x60     ; 0110 0000 = Module 2 enabled as watchdog timer, watchdog timer locked on until reset
 0x0C0C 22         RET 
-
-; Data in FLASH Space
-0x0C0D            0xFF
-0x0C0E            0xFF
-
+;
+;
+;0x0C0D            0xFF
+;0x0C0E            0xFF
+;
 ; Jump Target - Callers: 0023 
 0x0C0F 02 0D B9   LJMP  0x0DB9
 
@@ -2502,31 +2509,36 @@
 0x0D12            0xFD
 0x0D13            0xF4
 0x0D14            0xF3
-0x0D15            0xFF          ;Here starts another set of jump table targets FF in between each is ignored
+;
+;                               ; this jump table is spaced x0100 above the data table
+;
+0x0D15            0xFF          ;Here starts the secondary set of jump table targets FF in between each is ignored
 0x0D16            0x10          ;First target = 0x102A
-0x0D17            0x2A (*)
+0x0D17            0x2A 
 0x0D18            0xFF
 0x0D19            0x0F          ;Second target = 0xF27
-0x0D1A            0x27 (')
+0x0D1A            0x27 
 0x0D1B            0xFF
 0x0D1C            0x11          ;Third Target = 0x1154
-0x0D1D            0x54 (T)
+0x0D1D            0x54 
 0x0D1E            0xFF
 0x0D1F            0x10          ;Fourth target = 0x10B8
 0x0D20            0xB8
 0x0D21            0xFF
 0x0D22            0x11          ;Five target = 0x1175
-0x0D23            0x75 (u)
+0x0D23            0x75 
 0x0D24            0xFF
 0x0D25            0x11          ;Sixth Target = 0x11EB
 0x0D26            0xEB
 0x0D27            0xFF
 0x0D28            0x12          ;Seventh target = 0x1279
-0x0D29            0x79 (y)
+0x0D29            0x79 
 0x0D2A            0xFF
 0x0D2B            0x10          ;Eighth/Final target = 0x105E
-0x0D2C            0x5E (^)
-
+0x0D2C            0x5E 
+;
+;
+;
 ; Jump Target - Callers: 0C00               ; Set up to clear RAM from 0 to 0x7F
 0x0D2D 78 7F      MOV R0,  #0x7F
 0x0D2F E4         CLR A 
