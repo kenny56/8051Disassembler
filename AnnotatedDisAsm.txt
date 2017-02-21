@@ -61,14 +61,15 @@
 ; 
 ; 0C15  - large table of periodic ascending values, length x100 [256 values]
 ; 0D15  - secondary jump table addresses [set of 8 addresses]
-; 0458  - 8 data bytes 01 02 04 08 10 20 40 80 read using the PC [8 values]
+; 0458  - 8 data bytes [01 02 04 08 10 20 40 80] read using the PC 
+; 0D6C  - "  " "  " "   "
 ; 0AD7  - Main jump address table [set of 6 addresses]
 ; 0BE5  - 6 data bytes 00 01 02 03 04 05 FF...   [6 values + 21 blanks = 27] fills to end of page
 ; 0B5F  - Bl data section 05 5D 00 00...
 ; 0B74  - 4 data bytes [81 8A 85 88]
 ; 0B6C  - "BOOTload"
 ;
-; 1245  - 20 data bytes in table
+; 1245  - 20 data bytes in table ;  from 0D74
 ;
 ; 12C2 to 1CFF is blank [FF] except for data bytes at boundary:
 ; 1A00 = [0x03] beginning of 14th page
