@@ -61,7 +61,7 @@
 ;
 ; DPTR data tables:
 ; 0C15  - large table of periodic ascending values, length x100 [256 values] (101A)
-; 0D15  - secondary jump table addresses [set of 8 addresses] (no separate load found, x100 above 0C15)
+; 0D15  - secondary jump table addresses [set of 8 addresses] (10FF)
 ; 0458  - 8 data bytes [01 02 04 08 10 20 40 80] read using the PC 
 ; 0D6C  - "  " "  " "   "
 ; 0AD7  - Main jump address table [set of 6 addresses] (indirectly loaded dph,dpl see 0A50)
@@ -2805,46 +2805,50 @@
 0x0E27 D0 F0      POP  B
 0x0E29 D0 E0      POP  ACC
 0x0E2B 32         RETI 
-
-; Jump Target - Callers: 0FDD 0EAA 1013      ; many data access strategies, one routine. 
-0x0E2C BB 01 0C   CJNE R3,  #0x01, 0x0E3B    ;If R3 = 1 Add R1 to DPL, R2 to DPH then grab byte at @DPTR and return it in Accum
+;
+;                                           ; Looks like a duplication/repeat of earlier subroutines...?
+;                                           ; READ load Acc based upon state of R3 and Carry
+; Jump Target - Callers: 0FDD 0EAA 1013     ; many data access strategies, one routine. [repeat of earlier subroutine]
+0x0E2C BB 01 0C   CJNE R3,  #0x01, 0x0E3B   ;If R3 = 1 Add R1 to DPL, R2 to DPH then grab byte @DPTR return it in Accum
 0x0E2F E5 82      MOV A,  DPL
 0x0E31 29         ADD A, R1 
 0x0E32 F5 82      MOV  DPL, A
-0x0E34 E5 83      MOV A,  DPH
+0x0E34 E5 83      MOV A,  DPH               ; adjust dprt with R1 R2 offsets
 0x0E36 3A         ADDC A, R2 
 0x0E37 F5 83      MOV  DPH, A
-0x0E39 E0         MOVX A, @DPTR 
+0x0E39 E0         MOVX A, @DPTR             ; grabs byte from External Memory and exits
 0x0E3A 22         RET 
 
-; Jump Target - Callers: 0E2C               ; If R3 wasn't 1
-0x0E3B 50 06      JNC  0x0E43               ; if the carry bit was set then go to third strategy
+; Jump Target - Callers: 0E2C               ; branch If R3 wasn't 1
+0x0E3B 50 06      JNC  0x0E43               ; if the carry bit was set then go to third strategy branch
 0x0E3D E9         MOV A, R1                 ; Add R1 to DPL
 0x0E3E 25 82      ADD A,  DPL
 0x0E40 F8         MOV R0, A                 ; Move accum to R0
-0x0E41 E6         MOV A, @R0                ; Do indirect byte lookup and store in accum
+0x0E41 E6         MOV A, @R0                ; Do indirect byte lookup and exit
 0x0E42 22         RET 
 
-; Jump Target - Callers: 0E3B               ; R3 was 1 and carry bit wasn't set then do this
-0x0E43 BB FE 06   CJNE R3,  #0xFE, 0x0E4C
+; Jump Target - Callers: 0E3B               ; branch for R3 =1 and C =0  bit wasn't set then do this
+0x0E43 BB FE 06   CJNE R3,  #0xFE, 0x0E4C   ; compare R3?=#FE ( or -2)
 0x0E46 E9         MOV A, R1 
-0x0E47 25 82      ADD A,  DPL
+0x0E47 25 82      ADD A,  DPL               ; if yes adjust dpl with R1 offset and store in R0
 0x0E49 F8         MOV R0, A 
-0x0E4A E2         MOVX, A, @R0 
+0x0E4A E2         MOVX, A, @R0              ; load Acc from External mem @ (R0) and return
 0x0E4B 22         RET 
 
-; Jump Target - Callers: 0E43 
+; Jump Target - Callers: 0E43               ; branch for R3 != FE
 0x0E4C E5 82      MOV A,  DPL
 0x0E4E 29         ADD A, R1 
 0x0E4F F5 82      MOV  DPL, A
 0x0E51 E5 83      MOV A,  DPH
 0x0E53 3A         ADDC A, R2 
-0x0E54 F5 83      MOV  DPH, A
+0x0E54 F5 83      MOV  DPH, A               ; adjust dptr with R R2 offsets
 0x0E56 E4         CLR A 
-0x0E57 93         MOVC A, @A+DPTR 
+0x0E57 93         MOVC A, @A+DPTR           ; load Acc using dptr of flash and return
 0x0E58 22         RET 
-
-; Jump Target - Callers: 0F1C 
+;
+;
+;
+; Jump Target - Callers: 0F1C               ; WRITE ROUTINES (AGAIN!)?
 0x0E59 BB 01 06   CJNE R3,  #0x01, 0x0E62
 0x0E5C 89 82      MOV  DPL, R1
 0x0E5E 8A 83      MOV  DPH, R2
@@ -2877,13 +2881,18 @@
 0x0E78 9C         SUBB A, R4 
 0x0E79 45 F0      ORL A,  B
 0x0E7B 22         RET 
-
-; Jump Target - Callers: 1105 
+;
+;
+;
+;
+; Jump Target - Callers: 1105           ; jump program execution based upon dptr table address
 0x0E7C 8A 83      MOV  DPH, R2
 0x0E7E 89 82      MOV  DPL, R1
 0x0E80 E4         CLR A 
-0x0E81 73         JMP @A+DPTR 
-
+0x0E81 73         JMP @A+DPTR           ; jumps to new location
+;
+;
+;
 ; Jump Target - Callers: 1281 
 0x0E82 8B 2F      MOV  X2Fh, R3         ; back up R1 through R3 to RAM
 0x0E84 8A 30      MOV  X30h, R2
@@ -3209,7 +3218,7 @@
 0x105C            0x12
 0x105D            0xB9
 
-; Jump Target - Callers:                    Eighth jump target in secondary jump table
+; Jump Target - Callers:                        ; Eighth jump target in secondary jump table
 0x105E C2 93      CLR  P1.3
 0x1060 E5 20      MOV A,  X20h
 0x1062 B4 3C 0A   CJNE A,  #0x3C, 0x106F
@@ -3311,14 +3320,14 @@
 ; Jump Target - Callers: 1108           - Main guts of secondard jump table routine
 0x10EE E5 1D      MOV A,  X1Dh
 0x10F0 75 F0 03   MOV  B, #0x03
-0x10F3 A4         MUL AB                ; Multiply RAM 0x1D by three
+0x10F3 A4         MUL AB                ; Multiply RAM 0x1D by three for offset
 0x10F4 24 15      ADD A,  #0x15         ; Add 0x15
 0x10F6 F5 82      MOV  DPL, A           ; Use that value for DPL
 0x10F8 E4         CLR A 
 0x10F9 34 0D      ADDC A,  #0x0D
 0x10FB F5 83      MOV  DPH, A           ; set DPH to 0x0D
 0x10FD 74 01      MOV A,  #0x01
-0x10FF 93         MOVC A, @A+DPTR 
+0x10FF 93         MOVC A, @A+DPTR       ; dptr = 0D15 + offset, the secondary jump address table
 0x1100 FA         MOV R2, A 
 0x1101 74 02      MOV A,  #0x02
 0x1103 93         MOVC A, @A+DPTR 
