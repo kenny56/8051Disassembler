@@ -60,21 +60,21 @@
 ; 0x69 - Used as selector for main loop's jump table. Value 0 - 5 selects what main loop will do each time.
 ;
 ; DPTR data tables:
-; 0C15  - large table of periodic ascending values, length x100 [256 values]
-; 0D15  - secondary jump table addresses [set of 8 addresses]
+; 0C15  - large table of periodic ascending values, length x100 [256 values] (101A)
+; 0D15  - secondary jump table addresses [set of 8 addresses] (no separate load found, x100 above 0C15)
 ; 0458  - 8 data bytes [01 02 04 08 10 20 40 80] read using the PC 
 ; 0D6C  - "  " "  " "   "
-; 0AD7  - Main jump address table [set of 6 addresses]
-; 0BE5  - 6 data bytes 00 01 02 03 04 05 FF...   [6 values + 21 blanks = 27] fills to end of page
-; 0B5F  - Bl data section 05 5D 00 00...
-; 0B74  - 4 data bytes [81 8A 85 88]
-; 0B6C  - "BOOTload"
+; 0AD7  - Main jump address table [set of 6 addresses] (indirectly loaded dph,dpl see 0A50)
+; 0BE5  - 6 data bytes 00 01 02 03 04 05 FF... (0399, 088E)
+; 0B5F  - Bl data section 05 5D 00 00... (0463)
+; 0B74  - 4 data bytes [81 8A 85 88] (055E)
+; 0B6C  - "BOOTload" (0577)
 ;
-; 1245  - 20 data bytes in table ;  from 0D74
+; 1245  - 20 data bytes in table ;  (from 0D74)
 ;
 ; 12C2 to 1CFF is blank [FF] except for data bytes at boundary:
-; 1A00 = [0x03] beginning of 14th page
-; 1BFE - 1BFF = [x92 x18] last 2 bytes of 14th page (1p = 512 bytes, 0x200), security bytes? from: x0726
+; 1A00 = [0x03] beginning of 14th page (072A)
+; 1BFE - 1BFF = [x92 x18] last 2 bytes of 14th page (1p = 512 bytes, 0x200), security bytes? (from: x0726)
 ;
 ; 1D00 to 1FFF = (?written after programming using MOVX, which first erased and put) 00 everywhere except where written:
 ; 1D00 to 1D0D = [2 1021749-00-B]
@@ -541,13 +541,13 @@
 ;
 ;
 ;
-; Jump Target - Callers: 07A9 
+; Jump Target - Callers: 07A9               ;
 0x01B1 E4         CLR A 
 0x01B2 F5 10      MOV  X10h, A
 0x01B4 F5 11      MOV  X11h, A
 0x01B6 F5 16      MOV  X16h, A
 0x01B8 75 17 00   MOV  X17h, #0x00
-0x01BB 75 18 11   MOV  X18h, #0x11
+0x01BB 75 18 11   MOV  X18h, #0x11          ; load and clear registers, Reg 18 = 11
 0x01BE FB         MOV R3, A 
 0x01BF 7A 00      MOV R2,  #0x00
 0x01C1 79 10      MOV R1,  #0x10
@@ -628,7 +628,7 @@
 0x025F F5 0F      MOV  X0Fh, A
 0x0261 F5 16      MOV  X16h, A
 0x0263 75 17 00   MOV  X17h, #0x00
-0x0266 75 18 0F   MOV  X18h, #0x0F
+0x0266 75 18 0F   MOV  X18h, #0x0F              ; load Reg 18 = 0F
 0x0269 FB         MOV R3, A 
 0x026A 7A 00      MOV R2,  #0x00
 0x026C 79 0E      MOV R1,  #0x0E
@@ -671,10 +671,10 @@
 0x02B7 AB 0B      MOV R3,  X0Bh
 0x02B9 AA 0C      MOV R2,  X0Ch
 0x02BB A9 0D      MOV R1,  X0Dh
-0x02BD 85 10 82   MOV  DPL, X10h
+0x02BD 85 10 82   MOV  DPL, X10h        ; DPTR loaded = 00 xx   , ExtMem ?
 0x02C0 75 83 00   MOV  DPH, #0x00
-0x02C3 12 00 A7   LCALL  0x00A7         ; read some data based upon R3 and Carry Flag state
-0x02C6 F5 18      MOV  X18h, A
+0x02C3 12 00 A7   LCALL  0x00A7         ; read some data based upon R3=(0B) and Carry=1 Flag state
+0x02C6 F5 18      MOV  X18h, A          ; and store it in Reg (18)
 0x02C8 7B 00      MOV R3,  #0x00
 0x02CA 7A 00      MOV R2,  #0x00
 0x02CC 79 0E      MOV R1,  #0x0E
@@ -702,7 +702,7 @@
 0x02EA E4         CLR A 
 0x02EB F5 0E      MOV  X0Eh, A
 0x02ED F5 0F      MOV  X0Fh, A
-0x02EF 12 00 1E   LCALL  0x001E
+0x02EF 12 00 1E   LCALL  0x001E                 ; send #1F out UART
 0x02F2 22         RET 
 
 ; Jump Target - Callers: 05E2 068C 0209 029A 
@@ -723,7 +723,7 @@
 0x030A EE         MOV A, R6 
 0x030B 94 00      SUBB A,  #0x00
 0x030D 40 03      JC  0x0312
-0x030F 7F 04      MOV R7,  #0x04
+0x030F 7F 04      MOV R7,  #0x04            ; load R7 = #04 and exit
 0x0311 22         RET 
 
 ; Jump Target - Callers: 030D 
@@ -733,7 +733,7 @@
 0x0318 AC 21      MOV R4,  X21h
 0x031A 12 03 7C   LCALL  0x037C
 0x031D 60 03      JZ  0x0322
-0x031F 7F 02      MOV R7,  #0x02
+0x031F 7F 02      MOV R7,  #0x02            ; R7 = 2
 0x0321 22         RET 
 
 ; Jump Target - Callers: 031D 
@@ -817,7 +817,7 @@
 0x0395 13         RRC A 
 0x0396 FF         MOV R7, A 
 0x0397 E5 1F      MOV A,  X1Fh
-0x0399 90 0B E5   MOV DPTR,  #0x0BE5
+0x0399 90 0B E5   MOV DPTR,  #0x0BE5            ; read 6 state table
 0x039C 93         MOVC A, @A+DPTR 
 0x039D FD         MOV R5, A 
 0x039E 7C 00      MOV R4,  #0x00
@@ -855,7 +855,7 @@
 0x03C8 F5 1F      MOV  X1Fh, A
 
 ; Jump Target - Callers: 0417 
-0x03CA E5 1F      MOV A,  X1Fh
+0x03CA E5 1F      MOV A,  X1Fh              ; loop
 0x03CC C3         CLR C 
 0x03CD 95 1E      SUBB A,  X1Eh
 0x03CF 50 48      JNC  0x0419
@@ -979,7 +979,7 @@
 0x0462            0x80
 
 ; Jump Target - Callers: 0425           ; "BOOTload" reader section
-0x0463 90 0B 5F   MOV DPTR,  #0x0B5F        ;Set DPTR to 0B5F "BOOTload" data table
+0x0463 90 0B 5F   MOV DPTR,  #0x0B5F        ;Set DPTR to 0B5F pre-"BOOTload" section
 ;                                           ; 05 5D 00 00 ... 
 ; Jump Target - Callers: 043B 0459 04A6 
 0x0466 E4         CLR A                 ;clear accum
@@ -1054,7 +1054,7 @@
 0x04BD 50 58      JNC  0x0517           
 0x04BF AF 05      MOV R7,  R5          
 0x04C1 AE 04      MOV R6,  R4          
-0x04C3 12 0B 78   LCALL  0x0B78         ;Look up byte from FLASH
+0x04C3 12 0B 78   LCALL  0x0B78         ; Look up byte from FLASH dptr set by 
 0x04C6 EF         MOV A, R7
 0x04C7 7B 00      MOV R3,  #0x00
 0x04C9 FA         MOV R2, A 
@@ -1064,7 +1064,7 @@
 0x04CE E4         CLR A 
 0x04CF 3C         ADDC A, R4 
 0x04D0 FE         MOV R6, A 
-0x04D1 12 0B 78   LCALL  0x0B78
+0x04D1 12 0B 78   LCALL  0x0B78         ; look up byte from FLASH
 0x04D4 7E 00      MOV R6,  #0x00
 0x04D6 EB         MOV A, R3 
 0x04D7 2F         ADD A, R7 
@@ -1155,14 +1155,14 @@
 0x0559 AF 0B      MOV R7,  X0Bh
 0x055B 05 0B      INC  X0Bh
 0x055D EF         MOV A, R7 
-0x055E 90 0B 74   MOV DPTR,  #0x0B74
+0x055E 90 0B 74   MOV DPTR,  #0x0B74            ; 4 data values, 81 8A 85 88
 0x0561 93         MOVC A, @A+DPTR 
 0x0562 B5 08 0A   CJNE A,  X08h, 0x056F
 0x0565 E5 0B      MOV A,  X0Bh
 0x0567 C3         CLR C 
 0x0568 94 04      SUBB A,  #0x04
 0x056A 40 D2      JC  0x053E
-0x056C 7F 05      MOV R7,  #0x05
+0x056C 7F 05      MOV R7,  #0x05                ; load R7 = 5 and exit
 0x056E 22         RET 
 
 ; Jump Target - Callers: 0562 
@@ -1171,7 +1171,7 @@
 0x0572 AF 0A      MOV R7,  X0Ah
 0x0574 05 0A      INC  X0Ah
 0x0576 EF         MOV A, R7 
-0x0577 90 0B 6C   MOV DPTR,  #0x0B6C
+0x0577 90 0B 6C   MOV DPTR,  #0x0B6C            ; "BOOTload"
 0x057A 93         MOVC A, @A+DPTR 
 0x057B 65 08      XRL A,  X08h
 0x057D 70 27      JNZ  0x05A6
@@ -1188,15 +1188,15 @@
 0x0593 12 09 52   LCALL  0x0952
 0x0596 EF         MOV A, R7 
 0x0597 64 02      XRL A,  #0x02
-0x0599 60 03      JZ  0x059E
-0x059B 7F 03      MOV R7,  #0x03
+0x0599 60 03      JZ  0x059E                ; compare
+0x059B 7F 03      MOV R7,  #0x03            ; load R7 = 3 and exit
 0x059D 22         RET 
 
 ; Jump Target - Callers: 0599 
-0x059E E4         CLR A 
+0x059E E4         CLR A                     ; branch
 0x059F FF         MOV R7, A 
-0x05A0 12 00 56   LCALL  0x0056
-0x05A3 7F 06      MOV R7,  #0x06
+0x05A0 12 00 56   LCALL  0x0056             ; store R7 =0 in Reg 68
+0x05A3 7F 06      MOV R7,  #0x06            ; load R7 = 6 and exit
 0x05A5 22         RET 
 
 ; Jump Target - Callers: 057D 
@@ -1234,10 +1234,10 @@
 0x05D3 22         RET 
 
 ; Jump Target - Callers: 05CF 
-0x05D4 12 00 16   LCALL  0x0016
+0x05D4 12 00 16   LCALL  0x0016             ; send #79 out UART
 0x05D7 7A 00      MOV R2,  #0x00
 0x05D9 79 1A      MOV R1,  #0x1A
-0x05DB 12 08 C8   LCALL  0x08C8
+0x05DB 12 08 C8   LCALL  0x08C8             ; 
 0x05DE F5 29      MOV  X29h, A
 0x05E0 7D 02      MOV R5,  #0x02
 0x05E2 12 02 F3   LCALL  0x02F3
@@ -1437,7 +1437,7 @@
 ; Jump Target - Callers: 077B 
 0x0726 7F 00      MOV R7,  #0x00
 0x0728 7E 1A      MOV R6,  #0x1A
-0x072A 12 0B 78   LCALL  0x0B78   ; Look up value at 0x1A00 in FLASH (it's 3)
+0x072A 12 0B 78   LCALL  0x0B78   ; Look up value at R6,R7 =0x1A00 in FLASH (it's 3)
 0x072D EF         MOV A, R7       ; Transfer that value to Accum
 0x072E F4         CPL A           ; NOT 3 = 1111 1100 = 0xFC
 0x072F 60 42      JZ  0x0773      ; yet again a branch that cannot happen. 0x1A00 is always 3 (isn't it?!)
@@ -1448,7 +1448,7 @@
 0x0736 7C 1B      MOV R4,  #0x1B  
 0x0738 FF         MOV R7, A 
 0x0739 7E 0C      MOV R6,  #0x0C
-0x073B 12 04 A8   LCALL  0x04A8   ;XXX
+0x073B 12 04 A8   LCALL  0x04A8   ; XXX
 0x073E 8E 0A      MOV  X0Ah, R6
 0x0740 8F 0B      MOV  X0Bh, R7
 0x0742 7F FE      MOV R7,  #0xFE
@@ -1710,7 +1710,7 @@
 0x08C5 7F 01      MOV R7,  #0x01            ; branch if R7 !=0 then load R7 = #01 and return
 0x08C7 22         RET 
 
-; Jump Target - Callers: 05DB 0292 
+; Jump Target - Callers: 05DB 0292          ; 
 0x08C8 7B 00      MOV R3,  #0x00
 
 ; Jump Target - Callers: 0685 
@@ -1959,7 +1959,7 @@
 0x0A3F E5 69      MOV A,  X69h      ; grab value from selector register x69, low byte of dptr [00-05]
 0x0A41 75 F0 03   MOV B, #0x03     
 0x0A44 A4         MUL AB            ;Multiply value from x69 by 3, since data format is FF xx xx
-0x0A45 24 D7      ADD A,  #0xD7     ;Add 0xD7 to result
+0x0A45 24 D7      ADD A,  #0xD7     ;Add 0xD7 to result [D7 + offset]
 0x0A47 F5 82      MOV DPL, A        ;put that in low byte of DPTR
 0x0A49 E4         CLR A 
 0x0A4A 34 0A      ADDC A,  #0x0A    
@@ -2577,7 +2577,7 @@
 0x0D13            0xF4
 0x0D14            0xF3
 ;
-;                               ; this jump table is spaced x0100 above the data table
+;                               ; this jump table is spaced x0100 above the dptr data table (ref 101A)
 ;
 0x0D15            0xFF          ;Here starts the secondary set of jump table targets FF in between each is ignored
 0x0D16            0x10          ;First target = 0x102A
