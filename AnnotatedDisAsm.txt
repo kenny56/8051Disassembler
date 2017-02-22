@@ -1500,7 +1500,7 @@
 ; Jump Target - Callers: 072F 0765 076A 
 0x0773 22         RET 
 
-; Jump Target - Callers: 09C8 0BD0 
+; Jump Target - Callers: 09C8 0BD0      ; section to determine UART 
 0x0774 8F 09      MOV  X09h, R7             ; store R7 in reg 09
 0x0776 E5 09      MOV A,  X09h
 0x0778 B4 21 03   CJNE A,  #0x21, 0x077E    ; compare if R7 = #21
@@ -1508,36 +1508,37 @@
 
 ; Jump Target - Callers: 0778               ; branch if not 
 0x077E 12 00 16   LCALL  0x0016             ; send #79 out the UART 
-0x0781 E5 09      MOV A,  X09h
-0x0783 24 E6      ADD A,  #0xE6
+0x0781 E5 09      MOV A,  X09h          ; add -ve values to (09) determines branch when result = 0
+0x0783 24 E6      ADD A,  #0xE6     ; -1A           
 0x0785 60 25      JZ  0x07AC
-0x0787 24 EF      ADD A,  #0xEF
+0x0787 24 EF      ADD A,  #0xEF     ; -11  , sub -2B
 0x0789 60 24      JZ  0x07AF
-0x078B 24 FA      ADD A,  #0xFA
+0x078B 24 FA      ADD A,  #0xFA     ;-06 , sub -31
 0x078D 60 1A      JZ  0x07A9
-0x078F 24 F5      ADD A,  #0xF5
+0x078F 24 F5      ADD A,  #0xF5     ;-0B,  -3C
 0x0791 60 1F      JZ  0x07B2
-0x0793 24 F9      ADD A,  #0xF9
+0x0793 24 F9      ADD A,  #0xF9     ;-07, -43
 0x0795 60 0F      JZ  0x07A6
-0x0797 24 F6      ADD A,  #0xF6
+0x0797 24 F6      ADD A,  #0xF6     ;-0A, -4D
 0x0799 60 1A      JZ  0x07B5
-0x079B 24 EF      ADD A,  #0xEF
+0x079B 24 EF      ADD A,  #0xEF     ;-11, sub -5E
 0x079D 60 19      JZ  0x07B8
-0x079F 24 4D      ADD A,  #0x4D
-0x07A1 70 18      JNZ  0x07BB
-0x07A3 02 06 1E   LJMP  0x061E
+0x079F 24 4D      ADD A,  #0x4D     ;+4D or -B3 , total -111, or -11
+0x07A1 70 18      JNZ  0x07BB       ; here jump if not =0
+0x07A3 02 06 1E   LJMP  0x061E      ; or jump if=0
 
 ; Jump Target - Callers: 0795           ;branches
+;
 0x07A6 02 02 5C   LJMP  0x025C
 
 ; Jump Target - Callers: 078D 
 0x07A9 02 01 B1   LJMP  0x01B1
 
 ; Jump Target - Callers: 0785 
-0x07AC 02 00 06   LJMP  0x0006
+0x07AC 02 00 06   LJMP  0x0006      ; send #01 out the UART
 
 ; Jump Target - Callers: 0789 
-0x07AF 02 00 0E   LJMP  0x000E
+0x07AF 02 00 0E   LJMP  0x000E      ; send #06 out the UART
 
 ; Jump Target - Callers: 0791 
 0x07B2 02 0B B0   LJMP  0x0BB0
@@ -1549,7 +1550,7 @@
 0x07B8 02 0B 84   LJMP  0x0B84
 
 ; Jump Target - Callers: 07A1 
-0x07BB 12 00 1E   LCALL  0x001E
+0x07BB 12 00 1E   LCALL  0x001E     ; send #1F out the UART
 0x07BE 22         RET 
 
 ; Jump Target - Callers: 081A 09B5 05C5 0635 
