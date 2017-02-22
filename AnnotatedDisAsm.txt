@@ -2887,19 +2887,19 @@
 ; Jump Target - Callers: 0E66 
 0x0E6A 22         RET 
 
-; Jump Target - Callers: 1239 0F08 
+; Jump Target - Callers: 1239 0F08      ; wow what a bunch of mess
 0x0E6B EB         MOV A, R3 
 0x0E6C 9F         SUBB A, R7 
 0x0E6D F5 F0      MOV  B, A
 0x0E6F EA         MOV A, R2 
 0x0E70 9E         SUBB A, R6 
-0x0E71 42 F0      ORL  B, A
+0x0E71 42 F0      ORL  B, A             R7-R3 OR R6-R2 => B
 0x0E73 E9         MOV A, R1 
 0x0E74 9D         SUBB A, R5 
-0x0E75 42 F0      ORL  B, A
+0x0E75 42 F0      ORL  B, A             R5-R1 OR B => B
 0x0E77 E8         MOV A, R0 
 0x0E78 9C         SUBB A, R4 
-0x0E79 45 F0      ORL A,  B
+0x0E79 45 F0      ORL A,  B             B OR R4-R0 => A
 0x0E7B 22         RET 
 ;
 ;
@@ -3184,7 +3184,7 @@
 0x1027 AF 0D      MOV R7,  X0Dh
 0x1029 22         RET 
 
-; Data in FLASH Space
+; Data in FLASH Space; missed on run, manually decode below
 0x102A            0x7F ()
 0x102B            0x01
 0x102C            0x12
@@ -3239,39 +3239,37 @@
 0x105D            0xB9
 ;
 ;   insert manual decode starting at 102A
-102A 7F01  		MOV R7, #1h                     ; 1st secondary jump target
-  102C 1212B9		LCALL 0x12B9 L0260
+0x102A 7F01  		MOV R7, #1h                     ; 1st secondary jump target
+  102C 1212B9		LCALL 0x12B9        ; ; save R7 in reg 27
   102F C293  		CLR P1.3
   1031 E4    		CLR A
-  1032 F51F  		MOV 1Fh, A
+  1032 F51F  		MOV 1Fh, A          ; turn off LED and clear some registers
   1034 F520  		MOV 20h, A
   1036 F521  		MOV 21h, A
   1038 F522  		MOV 22h, A
-L0279:
-  103A 7F0A  		MOV R7, #0Ah                ; loop
+;
+0x103A 7F0A  		MOV R7, #0Ah                ; loop
   103C 7E00  		MOV R6, #0h
   103E 7D00  		MOV R5, #0h
   1040 7C00  		MOV R4, #0h
-  1042 121230		LCALL 0x1230 L0268
+0x1042 121230		LCALL 0x1230   ? ; ; Reg 23-26 differenced with R4-7 to set/clear Carry and load R7 0/1
   1045 EF    		MOV A, R7
-  1046 7005  		JNZ 0x104D L0277
-  1048 1212B5		LCALL 0x12B5 L0278
-  104B 80ED  		SJMP 0x103A L0279           ; jump up to loop
-
-L0277:
-  104D E51E  		MOV A, 1Eh                  ; branch
-  104F 7005  		JNZ L0280
+  1046 7005  		JNZ 0x104D
+0x1048 1212B5		LCALL 0x12B5    ; ; clear Reg 29
+  104B 80ED  		SJMP 0x103A           ; jump back up to loop
+;
+0x104D E51E  		MOV A, 1Eh                  ; branch on R7 not zero
+  104F 7005  		JNZ L0280       ; is 1E set?
   1051 7F01  		MOV R7, #1h
-  1053 1212BC		LCALL L0263
+0x1053 1212BC		LCALL 0x12BC      ; ; save R7=1 in reg 2D
 L0280:
   1056 751D01		MOV 1Dh, #1h
   1059 E4    		CLR A
   105A FF    		MOV R7, A
-  105B 0212B9		LJMP L0260
+0x105B 0212B9		LJMP 0x12B9     ; ;save R7=0 in reg 27
 ;
 ;
 ;
-
 ; Jump Target - Callers:                        ; Eighth jump target in secondary jump table
 0x105E C2 93      CLR  P1.3
 0x1060 E5 20      MOV A,  X20h
@@ -3566,19 +3564,19 @@ L0280:
 ; Jump Target - Callers: 121C 
 0x122F 22         RET 
 
-; Jump Target - Callers: 0EF4 
+; Jump Target - Callers: 0EF4   ;manual add 1042    ;
 0x1230 AB 26      MOV R3,  X26h
 0x1232 AA 25      MOV R2,  X25h
 0x1234 A9 24      MOV R1,  X24h
 0x1236 A8 23      MOV R0,  X23h
-0x1238 D3         SETB C 
-0x1239 12 0E 6B   LCALL  0x0E6B
-0x123C 40 04      JC  0x1242
-0x123E 7F 01      MOV R7,  #0x01
-0x1240 80 02      SJMP  0x1244
+0x1238 D3         SETB C            ; set Carry going in
+0x1239 12 0E 6B   LCALL  0x0E6B     ; logic OR of the R0-R7 to load A and B and carry
+0x123C 40 04      JC  0x1242        ; what is Carry coming out?
+0x123E 7F 01      MOV R7,  #0x01    ; Carry not set then R7 = 1
+0x1240 80 02      SJMP  0x1244      ; why not just one byte return, e.g x22
 
 ; Jump Target - Callers: 123C 
-0x1242 7F 00      MOV R7,  #0x00
+0x1242 7F 00      MOV R7,  #0x00    ; if carry set then R7 =0
 
 ; Jump Target - Callers: 1240 
 0x1244 22         RET 
@@ -3674,22 +3672,23 @@ L0280:
 0x12AD 75 B2 C7   MOV  OSCICN, #0xC7    ; set OSC ICN to 1100 0111 = Enabled in normal mode, Sysclock is oscillator / 1
 0x12B0 22         RET 
                                         ; * kenny notes
-; Data in FLASH Space                   *Manually decoded, theses are called from code at 102A, which is also tagged data
+;; manual No TargetData in FLASH Space   *Manually decoded, theses are called from code at 102A, which is also tagged data
 0x12B1 75 C9 40   MOV  rC9, #40         ; load Voltage Control SFR with  0100 0000
 0x12B2            0xC9                  ; => 2.1 Volt output enabled, but why write/set the reserved bit ?
 0x12B3            0x40 (@)
 0x12B4 22         RET                   ; return
 
+;;manual Jump Target - Caller: 1048    ; added manually
 0x12B5 E4         CLR A                 ; *
 0x12B6 F5 29      MOV X29, A            ; clear register 29 and return
 0x12B7            0x29
 0x12B8 22         RET                   ; *
 
-; Jump Target - Callers: 0F29 0F6E 
+; Jump Target - Callers: 0F29 0F6E ; [102C, 105B added from manual decode]
 0x12B9 8F 27      MOV  X27h, R7         ; save R7 in register 27 and return
 0x12BB 22         RET 
 
-; Jump Target - Callers: 0F4D 0F46 
+; Jump Target - Callers: 0F4D 0F46 ; [1053 added]
 0x12BC 8F 2D      MOV  X2Dh, R7         ; save R7 in register 2D and return
 0x12BE 22         RET 
 
