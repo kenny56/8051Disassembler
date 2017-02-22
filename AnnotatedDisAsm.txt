@@ -95,6 +95,19 @@
 ; Known Interrupt Service Routines
 ;  UART
 ;  Timer2
+;
+
+
+; Duplicate Subroutines (sorry compiler)
+;  There are sections to READ or WRITE data bytes based upon the state of R3 and the Carry bit.
+;   Reads:  008E - 00D3; 00E6 - 0110;
+    Writes: 00D4 - 00E5; 0111 - 012F;
+    dptr Jump:  0190 - 0195;   
+    adj dptr:   0141 - 01B0;
+;   
+;   Start up routine is repeated, first at 041C, repeat at 0D2D ...?
+;
+
 
 ; Jump Target - Callers: CPU on start up - This is the Reset vector
 0x0000 02 04 1C   LJMP  0x041C          ; jump to the start up routine
@@ -191,7 +204,7 @@
 0x004D            0x1E
 
 ; Jump Target - Callers: 0A1C 0A38 0A5D 0A75 080C 0849 
-0x004E 8F 61      MOV  X61h, R7
+0x004E 8F 61      MOV  X61h, R7                 ; save R7 in register 61 and return
 0x0050 22         RET 
 0x0051            0xFF
 0x0052            0xFF
@@ -202,7 +215,7 @@
 0x0055            0x21 
 
 ; Jump Target - Callers: 053B 05A0 09F1 09E0 
-0x0056 8F 68      MOV  X68h, R7
+0x0056 8F 68      MOV  X68h, R7                 ; save R7 in register 68 and return
 0x0058 22         RET 
 0x0059            0xFF
 0x005A            0xFF
@@ -371,10 +384,10 @@
 
 ; Jump Target - Callers: 00F3 
 0x00FB BB FE 07   CJNE R3,  #0xFE, 0x0105
-0x00FE E3         MOVX, A, @R1 
+0x00FE E3         MOVX A, @R1 
 0x00FF F5 F0      MOV  B, A
 0x0101 09         INC R1 
-0x0102 E3         MOVX, A, @R1 
+0x0102 E3         MOVX A, @R1 
 0x0103 19         DEC R1 
 0x0104 22         RET 
 
@@ -603,7 +616,7 @@
 0x0232 79 10      MOV R1,  #0x10
 0x0234 12 03 89   LCALL  0x0389
 0x0237 BF 02 19   CJNE R7,  #0x02, 0x0253
-0x023A 02 00 16   LJMP  0x0016              ; send #79 out UART
+0x023A 02 00 16   LJMP  0x0016                  ; send #79 out UART
 
 ; Jump Target - Callers: 0210 
 0x023D E5 12      MOV A,  X12h
@@ -619,7 +632,7 @@
 0x0253 E4         CLR A 
 0x0254 F5 10      MOV  X10h, A
 0x0256 F5 11      MOV  X11h, A
-0x0258 12 00 1E   LCALL  0x001E               ; send #1F out UART
+0x0258 12 00 1E   LCALL  0x001E                 ; send #1F out UART
 0x025B 22         RET 
 
 ; Jump Target - Callers: 07A6 
@@ -848,7 +861,7 @@
 ;
 ;
 ; Jump Target - Callers: 03BA 
-0x03C0 05 1F      INC  X1Fh
+0x03C0 05 1F      INC  X1Fh                 ; branch R5 !=(1E)R7
 0x03C2 E5 1F      MOV A,  X1Fh
 0x03C4 B4 07 CB   CJNE A,  #0x07, 0x0392
 0x03C7 E4         CLR A 
@@ -893,15 +906,15 @@
 0x040C 12 0B 1B   LCALL  0x0B1B
 0x040F 6F         XRL A, R7 
 0x0410 60 03      JZ  0x0415
-0x0412 7F 03      MOV R7,  #0x03
+0x0412 7F 03      MOV R7,  #0x03        ; load R7 = 3 and return
 0x0414 22         RET 
 
 ; Jump Target - Callers: 0410 
 0x0415 05 1F      INC  X1Fh
-0x0417 80 B1      SJMP  0x03CA
+0x0417 80 B1      SJMP  0x03CA          ; repeat loop
 
 ; Jump Target - Callers: 03CF 
-0x0419 7F 02      MOV R7,  #0x02
+0x0419 7F 02      MOV R7,  #0x02        ; load R7 = 2 and return
 0x041B 22         RET 
 
 ; Jump Target - Caller: Reset Vector; Code starts here [Clears the stack and sets stack pointer]
@@ -1155,9 +1168,9 @@
 0x0559 AF 0B      MOV R7,  X0Bh
 0x055B 05 0B      INC  X0Bh
 0x055D EF         MOV A, R7 
-0x055E 90 0B 74   MOV DPTR,  #0x0B74            ; 4 data values, 81 8A 85 88
+0x055E 90 0B 74   MOV DPTR,  #0x0B74            ; 4 data values, 81 8A 85 88 based upon (0B)
 0x0561 93         MOVC A, @A+DPTR 
-0x0562 B5 08 0A   CJNE A,  X08h, 0x056F
+0x0562 B5 08 0A   CJNE A,  X08h, 0x056F     ; compare
 0x0565 E5 0B      MOV A,  X0Bh
 0x0567 C3         CLR C 
 0x0568 94 04      SUBB A,  #0x04
@@ -1165,7 +1178,7 @@
 0x056C 7F 05      MOV R7,  #0x05                ; load R7 = 5 and exit
 0x056E 22         RET 
 
-; Jump Target - Callers: 0562 
+; Jump Target - Callers: 0562               ; branch 
 0x056F E4         CLR A 
 0x0570 F5 0B      MOV  X0Bh, A
 0x0572 AF 0A      MOV R7,  X0Ah
@@ -1195,7 +1208,7 @@
 ; Jump Target - Callers: 0599 
 0x059E E4         CLR A                     ; branch
 0x059F FF         MOV R7, A 
-0x05A0 12 00 56   LCALL  0x0056             ; store R7 =0 in Reg 68
+0x05A0 12 00 56   LCALL  0x0056             ; store R7 = 0 in Reg 68
 0x05A3 7F 06      MOV R7,  #0x06            ; load R7 = 6 and exit
 0x05A5 22         RET 
 
@@ -1248,7 +1261,7 @@
 0x05EC 22         RET 
 
 ; Jump Target - Callers: 05E8 
-0x05ED 12 00 16   LCALL  0x0016
+0x05ED 12 00 16   LCALL  0x0016             ; send #79 out UART
 0x05F0 AB 1A      MOV R3,  X1Ah
 0x05F2 AA 1B      MOV R2,  X1Bh
 0x05F4 A9 1C      MOV R1,  X1Ch
@@ -1278,7 +1291,7 @@
 0x0624 12 06 79   LCALL  0x0679
 0x0627 EF         MOV A, R7 
 0x0628 60 4B      JZ  0x0675
-0x062A 12 00 16   LCALL  0x0016
+0x062A 12 00 16   LCALL  0x0016                 ; send #79 out UART
 0x062D 7A 00      MOV R2,  #0x00
 0x062F 79 0C      MOV R1,  #0x0C
 0x0631 12 08 E2   LCALL  0x08E2
@@ -1302,7 +1315,7 @@
 0x064F 40 24      JC  0x0675
 
 ; Jump Target - Callers: 063B 
-0x0651 12 00 16   LCALL  0x0016
+0x0651 12 00 16   LCALL  0x0016                     ; send #79 out UART
 0x0654 E4         CLR A 
 0x0655 F5 0D      MOV  X0Dh, A
 
@@ -1325,11 +1338,12 @@
 0x0673 80 E2      SJMP  0x0657
 
 ; Jump Target - Callers: 0628 064F 
-0x0675 12 00 1E   LCALL  0x001E
+0x0675 12 00 1E   LCALL  0x001E                 ; send #1F out UART
 
 ; Jump Target - Callers: 065C 
 0x0678 22         RET 
-
+;
+;
 ; Jump Target - Callers: 01D2 0624 
 0x0679 8B 13      MOV  X13h, R3
 0x067B 8A 14      MOV  X14h, R2
@@ -1343,46 +1357,48 @@
 0x068C 12 02 F3   LCALL  0x02F3
 0x068F EF         MOV A, R7 
 0x0690 64 01      XRL A,  #0x01
-0x0692 60 03      JZ  0x0697
-0x0694 7F 00      MOV R7,  #0x00
+0x0692 60 03      JZ  0x0697            ; check R7 =A=0?
+0x0694 7F 00      MOV R7,  #0x00        ; no, load R7 = 0 and return
 0x0696 22         RET 
 
-; Jump Target - Callers: 0692 
+; Jump Target - Callers: 0692           ; branch for A=0 
 0x0697 AB 16      MOV R3,  X16h
 0x0699 AA 17      MOV R2,  X17h
 0x069B A9 18      MOV R1,  X18h
-0x069D 90 00 01   MOV DPTR,  #0x0001
-0x06A0 12 00 A7   LCALL  0x00A7
+0x069D 90 00 01   MOV DPTR,  #0x0001            ; strange dptr value
+0x06A0 12 00 A7   LCALL  0x00A7         ; use R3 and Carry to select dptr read path 
 0x06A3 FD         MOV R5, A 
 0x06A4 7C 00      MOV R4,  #0x00
-0x06A6 12 00 8E   LCALL  0x008E
+0x06A6 12 00 8E   LCALL  0x008E         ; 
 0x06A9 FE         MOV R6, A 
 0x06AA E4         CLR A 
 0x06AB 2D         ADD A, R5 
 0x06AC FF         MOV R7, A 
 0x06AD EC         MOV A, R4 
-0x06AE 3E         ADDC A, R6 
+0x06AE 3E         ADDC A, R6                    ; A
 0x06AF AB 13      MOV R3,  X13h
 0x06B1 AA 14      MOV R2,  X14h
 0x06B3 A9 15      MOV R1,  X15h
-0x06B5 8F F0      MOV  B, R7
-0x06B7 12 01 11   LCALL  0x0111
+0x06B5 8F F0      MOV  B, R7                    ; B
+0x06B7 12 01 11   LCALL  0x0111                 ; write A and B to some memory location
 0x06BA AB 13      MOV R3,  X13h
 0x06BC AA 14      MOV R2,  X14h
 0x06BE A9 15      MOV R1,  X15h
-0x06C0 12 00 E6   LCALL  0x00E6
+0x06C0 12 00 E6   LCALL  0x00E6                 ; load A and B from memory somewhere
 0x06C3 D3         SETB C 
 0x06C4 94 FF      SUBB A,  #0xFF
 0x06C6 E5 F0      MOV A,  B
 0x06C8 94 1D      SUBB A,  #0x1D
-0x06CA 40 03      JC  0x06CF
-0x06CC 7F 00      MOV R7,  #0x00
+0x06CA 40 03      JC  0x06CF                ; check Carry ?
+0x06CC 7F 00      MOV R7,  #0x00         ; Carry = 0 load R7 = 0 and return
 0x06CE 22         RET 
 
-; Jump Target - Callers: 06CA 
-0x06CF 7F 01      MOV R7,  #0x01
+; Jump Target - Callers: 06CA           ; Carry set
+0x06CF 7F 01      MOV R7,  #0x01                ; load R7 =1 and return
 0x06D1 22         RET 
-
+;
+;
+;
 ; Jump Target - Callers: 054C 0A16 
 0x06D2 8B 34      MOV  X34h, R3
 0x06D4 8A 35      MOV  X35h, R2
@@ -1435,7 +1451,7 @@
 0x0725 22         RET 
 
 ; Jump Target - Callers: 077B 
-0x0726 7F 00      MOV R7,  #0x00
+0x0726 7F 00      MOV R7,  #0x00    ; top of loop
 0x0728 7E 1A      MOV R6,  #0x1A
 0x072A 12 0B 78   LCALL  0x0B78   ; Look up value at R6,R7 =0x1A00 in FLASH (it's 3)
 0x072D EF         MOV A, R7       ; Transfer that value to Accum
@@ -1444,11 +1460,11 @@
 0x0731 E4         CLR A           ; zero out accum
 0x0732 FB         MOV R3, A       ; zero out R3 and R2 as well.
 0x0733 FA         MOV R2, A 
-0x0734 7D FD      MOV R5,  #0xFD  ; more register setting for some reason.
+0x0734 7D FD      MOV R5,  #0xFD  ; 1BFD top of 14th page of memory
 0x0736 7C 1B      MOV R4,  #0x1B  
 0x0738 FF         MOV R7, A 
 0x0739 7E 0C      MOV R6,  #0x0C
-0x073B 12 04 A8   LCALL  0x04A8   ; XXX
+0x073B 12 04 A8   LCALL  0x04A8   ; XXX?
 0x073E 8E 0A      MOV  X0Ah, R6
 0x0740 8F 0B      MOV  X0Bh, R7
 0x0742 7F FE      MOV R7,  #0xFE
@@ -1481,13 +1497,13 @@
 0x0773 22         RET 
 
 ; Jump Target - Callers: 09C8 0BD0 
-0x0774 8F 09      MOV  X09h, R7
+0x0774 8F 09      MOV  X09h, R7             ; store R7 in reg 09
 0x0776 E5 09      MOV A,  X09h
-0x0778 B4 21 03   CJNE A,  #0x21, 0x077E
-0x077B 02 07 26   LJMP  0x0726
+0x0778 B4 21 03   CJNE A,  #0x21, 0x077E    ; compare if R7 = #21
+0x077B 02 07 26   LJMP  0x0726              ; if so then jump up to top of loop
 
-; Jump Target - Callers: 0778           ; compare value in register 09 to select jump branch
-0x077E 12 00 16   LCALL  0x0016
+; Jump Target - Callers: 0778               ; branch if not 
+0x077E 12 00 16   LCALL  0x0016             ; send #79 out the UART 
 0x0781 E5 09      MOV A,  X09h
 0x0783 24 E6      ADD A,  #0xE6
 0x0785 60 25      JZ  0x07AC
