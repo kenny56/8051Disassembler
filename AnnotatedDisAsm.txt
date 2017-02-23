@@ -564,7 +564,7 @@
 0x01B4 F5 11      MOV  X11h, A
 0x01B6 F5 16      MOV  X16h, A
 0x01B8 75 17 00   MOV  X17h, #0x00
-0x01BB 75 18 11   MOV  X18h, #0x11          ; load and clear registers, Reg 18 = 11
+0x01BB 75 18 11   MOV  X18h, #0x11          ; load and clear registers, Reg X18 = #11
 0x01BE FB         MOV R3, A 
 0x01BF 7A 00      MOV R2,  #0x00
 0x01C1 79 10      MOV R1,  #0x10
@@ -2174,21 +2174,21 @@
 ; Jump Target - Callers: 0B5A 
 0x0B5E 22         RET 
 
-; "BOOTload" data table used in start routine
-0x0B5F            0x05              ;  from x0463
-0x0B60            0x5D (])
-0x0B61            0x00
-0x0B62            0x00
-0x0B63            0x00
-0x0B64            0x00
-0x0B65            0x00
-0x0B66            0x03
-0x0B67            0x66 (f)
+; InitCodeTable
+0x0B5F            0x05              ;  from x0463 first byte is counter
+0x0B60            0x5D          ; 2nd byte is RAM location to start loading
+0x0B61            0x00  ;5D 5
+0x0B62            0x00  ;5E 4
+0x0B63            0x00  ;5F 3
+0x0B64            0x00  ;60 2 
+0x0B65            0x00  ;61 1
+0x0B66            0x03  ;62 0
+0x0B67            0x66  ;
 0x0B68            0x00
 0x0B69            0x00
 0x0B6A            0x01
 0x0B6B            0x00
-;
+;"BOOTload" data table used in start routine
 0x0B6C            0x42 (B)          ; from 0B6C
 0x0B6D            0x4F (O)
 0x0B6E            0x4F (O)
