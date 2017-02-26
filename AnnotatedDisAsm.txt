@@ -1645,48 +1645,49 @@
 0x084C 22         RET 
 ;
 ;
-; Jump Target - Callers: 098A           ; Flash Lock and Key, and program store control
-0x084D 75 FF A0   MOV  VDDMON, #0xA0
-0x0850 E5 B7      MOV A,  FLKEY
-0x0852 64 02      XRL A,  #0x02
-0x0854 60 10      JZ  0x0866
+;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+; Jump Target - Callers: 098A           ; Check Flash Lock and Key, and set Flash Write/Erase enable
+0x084D 75 FF A0   MOV  VDDMON, #0xA0    ; 1010, Enable monitor, set threshold for req'd Flash W/E levels
+0x0850 E5 B7      MOV A,  FLKEY 
+0x0852 64 02      XRL A,  #0x02         ; check if flkey is unlocked to allow flash Write/Erase
+0x0854 60 10      JZ  0x0866            ; skip over if flkey was unlocked (02) 
 0x0856 12 00 8E   LCALL  0x008E
-0x0859 F5 B7      MOV  FLKEY, A
+0x0859 F5 B7      MOV  FLKEY, A         ; if not unlocked
 0x085B AB 2D      MOV R3,  X2Dh
-0x085D AA 2E      MOV R2,  X2Eh
+0x085D AA 2E      MOV R2,  X2Eh         ; load R1-3 from registers 2D-2F
 0x085F A9 2F      MOV R1,  X2Fh
-0x0861 12 00 8E   LCALL  0x008E
-0x0864 F5 B7      MOV  FLKEY, A
+0x0861 12 00 8E   LCALL  0x008E         ; go read a byte from somewhere depending upon R3 and C, and R1,R2
+0x0864 F5 B7      MOV  FLKEY, A         ; and use it to set flkey
 
 ; Jump Target - Callers: 0854 
-0x0866 E5 B7      MOV A,  FLKEY
+0x0866 E5 B7      MOV A,  FLKEY         ; check the flkey again
 0x0868 64 02      XRL A,  #0x02
-0x086A 60 03      JZ  0x086F
-0x086C 7F 00      MOV R7,  #0x00
+0x086A 60 03      JZ  0x086F            ; was it unlocked? if so skip over
+0x086C 7F 00      MOV R7,  #0x00        ; if not then load R7 =0 and exit
 0x086E 22         RET 
 
 ; Jump Target - Callers: 086A 
-0x086F E5 30      MOV A,  X30h
-0x0871 B4 02 05   CJNE A,  #0x02, 0x0879
-0x0874 75 8F 03   MOV  PSCTL, #0x03
-0x0877 80 0F      SJMP  0x0888
+0x086F E5 30      MOV A,  X30h              ; flkey is unlocked
+0x0871 B4 02 05   CJNE A,  #0x02, 0x0879    ; now check if register x30 (flag?) =2
+0x0874 75 8F 03   MOV  PSCTL, #0x03         ; if so then Enable page Erase and Flash Writes
+0x0877 80 0F      SJMP  0x0888              ; and skip over
 
 ; Jump Target - Callers: 0871 
-0x0879 E5 30      MOV A,  X30h
-0x087B B4 01 05   CJNE A,  #0x01, 0x0883
-0x087E 75 8F 01   MOV  PSCTL, #0x01
-0x0881 80 05      SJMP  0x0888
+0x0879 E5 30      MOV A,  X30h  
+0x087B B4 01 05   CJNE A,  #0x01, 0x0883    ; or check if register x30 =1 ?
+0x087E 75 8F 01   MOV  PSCTL, #0x01         ; if so then disable Erases but enable Flash Writes
+0x0881 80 05      SJMP  0x0888              ; and skip over
 
 ; Jump Target - Callers: 087B 
-0x0883 E4         CLR A 
-0x0884 F5 8F      MOV  PSCTL, A
-0x0886 FF         MOV R7, A 
+0x0883 E4         CLR A                     ; otherwise for x30 not equal to 2 or 1
+0x0884 F5 8F      MOV  PSCTL, A             ; disable E and W to Flash
+0x0886 FF         MOV R7, A                 ; set R7 =0 and exit
 0x0887 22         RET 
 
 ; Jump Target - Callers: 0881 0877 
-0x0888 7F 01      MOV R7,  #0x01
-0x088A 22         RET                           ; exit routine
-;
+0x0888 7F 01      MOV R7,  #0x01            ; set R7 =1 and exit
+0x088A 22         RET            
+;- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ;
 ;
 ;
